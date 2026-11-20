@@ -37,7 +37,7 @@ descrito en [EXCEPCION_TIENDAS.md](EXCEPCION_TIENDAS.md), según el
 
 ```dart
 // AeriS - Laboratory protocol assistant
-// Copyright (C) 2026 [TU NOMBRE COMPLETO] and contributors
+// Copyright (C) 2026 [Alejandro Pascual Hernández] and contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 ```
