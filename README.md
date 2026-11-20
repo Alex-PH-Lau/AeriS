@@ -27,7 +27,7 @@ Las contribuciones son bienvenidas. Lee [CONTRIBUTING.md](CONTRIBUTING.md) antes
 
 ## Licencia
 
-Copyright (C) 2026 [TU NOMBRE COMPLETO]
+Copyright (C) 2026 [Alejandro Pascual Hernández]
 
 AeriS es software libre: puedes redistribuirlo y modificarlo bajo los términos de la
 [GNU General Public License versión 3](LICENSE), publicada por la Free Software Foundation.
