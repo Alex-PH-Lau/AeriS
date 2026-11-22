@@ -9,4 +9,12 @@ void main() {
     expect(find.text('Mis protocolos'), findsOneWidget);
     expect(find.text('Ayuda'), findsOneWidget);
   });
+    testWidgets('Mis protocolos muestra la lista', (tester) async {
+    await tester.pumpWidget(const AerisApp());
+
+    await tester.tap(find.text('Mis protocolos'));
+    await tester.pumpAndSettle(); // espera a que termine la animación
+
+    expect(find.text('PCR estándar (V.1)'), findsOneWidget);
+  });
 }
