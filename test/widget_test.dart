@@ -7,12 +7,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aeris/main.dart';
 
-/// Abre la app y entra en la PCR.
-Future<void> abrirPcr(WidgetTester tester) async {
+/// Abre la app y entra en un protocolo de la lista.
+Future<void> abrirProtocolo(WidgetTester tester, String nombre) async {
   await tester.pumpWidget(const AerisApp());
   await tester.tap(find.text('Mis protocolos'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('PCR estándar (V.1)'));
+  await tester.tap(find.text(nombre));
+  await tester.pumpAndSettle();
+}
+
+Future<void> abrirPcr(WidgetTester tester) => abrirProtocolo(tester, 'PCR estándar (V.1)');
+
+/// Del paso 1 de la PCR al paso 2 (cálculo), confirmando su alerta.
+Future<void> irAlCalculo(WidgetTester tester) async {
+  await tester.tap(find.text('Siguiente'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Entendido'));
   await tester.pumpAndSettle();
 }
 
@@ -56,10 +66,37 @@ void main() {
     expect(find.text('Preparar los reactivos'), findsOneWidget);
   });
 
-  testWidgets('El paso de cálculo no deja avanzar sin muestras y calcula al rellenarlas', (tester) async {
+  testWidgets('La alerta bloquea hasta pulsar Entendido y queda como recordatorio', (tester) async {
     await abrirPcr(tester);
     await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+
+    // La ventana de alerta está abierta
+    expect(find.text('¡Atención!'), findsOneWidget);
+
+    // Tocar fuera no la cierra
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('¡Atención!'), findsOneWidget);
+
+    await tester.tap(find.text('Entendido'));
+    await tester.pumpAndSettle();
+    expect(find.text('¡Atención!'), findsNothing);
+
+    // El recordatorio sigue en el paso
+    expect(find.text('Mantén la Taq polimerasa en hielo en todo momento.'), findsOneWidget);
+
+    // Al volver a este paso no se repite la ventana
+    await tester.tap(find.text('Anterior'));
     await tester.pump();
+    await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    expect(find.text('¡Atención!'), findsNothing);
+  });
+
+  testWidgets('El paso de cálculo no deja avanzar sin muestras y calcula al rellenarlas', (tester) async {
+    await abrirPcr(tester);
+    await irAlCalculo(tester);
     expect(find.text('Paso 2 de 5'), findsOneWidget);
 
     // Sin muestras, "Siguiente" está desactivado
@@ -82,8 +119,7 @@ void main() {
 
   testWidgets('Recorrer la PCR hasta el final muestra el diálogo y vuelve a la lista', (tester) async {
     await abrirPcr(tester);
-    await tester.tap(find.text('Siguiente'));
-    await tester.pump();
+    await irAlCalculo(tester);
     await rellenarCalculo(tester);
 
     // Paso 2 → 5
@@ -105,8 +141,7 @@ void main() {
 
   testWidgets('Las muestras se conservan al volver atrás y adelante', (tester) async {
     await abrirPcr(tester);
-    await tester.tap(find.text('Siguiente'));
-    await tester.pump();
+    await irAlCalculo(tester);
     await rellenarCalculo(tester);
 
     await tester.tap(find.text('Siguiente')); // al paso 3
@@ -116,5 +151,37 @@ void main() {
 
     expect(find.widgetWithText(TextField, 'M1'), findsOneWidget);
     expect(find.text('2.00 µL de DNA + 3.00 µL de agua'), findsOneWidget);
+  });
+
+  testWidgets('Con el temporizador en marcha pide confirmación para avanzar', (tester) async {
+    await abrirProtocolo(tester, 'Electroforesis en gel de agarosa (V.2)');
+
+    // Paso 1 → 4 ("Correr el gel", con temporizador de 30 min)
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Siguiente'));
+      await tester.pump();
+    }
+    expect(find.text('Paso 4 de 5'), findsOneWidget);
+    expect(find.text('30:00'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Iniciar'));
+    await tester.tap(find.text('Iniciar'));
+    await tester.pump();
+    expect(find.text('Pausar'), findsOneWidget);
+
+    // "Quedarme" no avanza
+    await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    expect(find.text('El temporizador sigue en marcha'), findsOneWidget);
+    await tester.tap(find.text('Quedarme'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 4 de 5'), findsOneWidget);
+
+    // "Avanzar igualmente" sí
+    await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Avanzar igualmente'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 5 de 5'), findsOneWidget);
   });
 }

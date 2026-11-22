@@ -85,7 +85,7 @@ final electroforesis = Protocolo(
     PasoInstrucciones(
       titulo: 'Correr el gel',
       texto: 'Correr el gel a 100 V.',
-      temporizador: Temporizador(Duration(minutes: 30)),
+      temporizador: Temporizador(Duration(seconds: 10)),
     ),
     PasoInstrucciones(
       titulo: 'Visualizar',

@@ -3,12 +3,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:aeris/modelos/calculo.dart';
+import 'package:aeris/modelos/cuenta_atras.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
+import 'package:aeris/pantallas/widgets/avisos.dart';
 import 'package:aeris/pantallas/widgets/vista_calculo.dart';
+import 'package:aeris/pantallas/widgets/vista_temporizador.dart';
 
 class PantallaEjecucion extends StatefulWidget {
   final Protocolo protocolo;
@@ -28,17 +34,102 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   List<Muestra> muestras = [];
   int _contadorMuestras = 0; // para dar un id único a cada fila nueva
 
+  // Temporizadores y alertas
+  final Map<int, CuentaAtras> cuentas = {}; // índice del paso → su cuenta atrás
+  final Set<int> alertasVistas = {}; // pasos cuya alerta ya se ha confirmado
+  final Set<int> finesAvisados = {}; // temporizadores cuyo fin ya se ha avisado
+  Timer? _tic; // despierta la pantalla cada segundo
+
   @override
   void initState() {
     super.initState();
+    final pasos = widget.protocolo.pasos;
+
     // La tabla de muestras empieza con los controles del primer paso de cálculo
-    for (final paso in widget.protocolo.pasos) {
+    for (final paso in pasos) {
       if (paso is PasoCalculo) {
         muestras = muestrasIniciales(paso);
         break;
       }
     }
+
+    // Una cuenta atrás por cada paso con temporizador
+    for (var i = 0; i < pasos.length; i++) {
+      final temporizador = pasos[i].temporizador;
+      if (temporizador != null) cuentas[i] = CuentaAtras(temporizador.duracion);
+    }
+
+    _tic = Timer.periodic(const Duration(seconds: 1), (_) => _alTic());
+
+    // La alerta del primer paso se muestra cuando la pantalla ya está dibujada
+    WidgetsBinding.instance.addPostFrameCallback((_) => _alEntrarEnPaso(0));
   }
+
+  @override
+  void dispose() {
+    _tic?.cancel(); // sin esto, el Timer seguiría vivo tras cerrar la pantalla
+    super.dispose();
+  }
+
+  // ---------- Temporizadores ----------
+
+  void _alTic() {
+    // Solo trabajar si hay alguna cuenta corriendo cuyo fin no se ha avisado
+    final hayActivas = cuentas.entries.any(
+      (entrada) => entrada.value.enMarcha && !finesAvisados.contains(entrada.key),
+    );
+    if (!hayActivas) return;
+    setState(() {}); // redibujar la cuenta atrás
+
+    for (final entrada in cuentas.entries) {
+      final indice = entrada.key;
+      final cuenta = entrada.value;
+      if (cuenta.enMarcha && cuenta.terminado && !finesAvisados.contains(indice)) {
+        finesAvisados.add(indice);
+        _avisarFin(indice);
+      }
+    }
+  }
+
+  Future<void> _avisarFin(int indice) async {
+    HapticFeedback.heavyImpact();
+    SystemSound.play(SystemSoundType.alert);
+    await mostrarFinTemporizador(context, widget.protocolo.pasos[indice].titulo);
+  }
+
+  void iniciarTemporizador(int indice) {
+    setState(() => cuentas[indice]?.iniciar());
+  }
+
+  void pausarTemporizador(int indice) {
+    setState(() => cuentas[indice]?.pausar());
+  }
+
+  void reiniciarTemporizador(int indice) {
+    setState(() {
+      cuentas[indice]?.reiniciar();
+      finesAvisados.remove(indice);
+    });
+  }
+
+  /// ¿Hay un temporizador corriendo en este paso que todavía no ha terminado?
+  bool _temporizadorPendiente(int indice) {
+    final cuenta = cuentas[indice];
+    return cuenta != null && cuenta.enMarcha && !cuenta.terminado;
+  }
+
+  // ---------- Alertas ----------
+
+  /// Muestra la alerta del paso la primera vez que se llega a él.
+  Future<void> _alEntrarEnPaso(int indice) async {
+    final alerta = widget.protocolo.pasos[indice].alerta;
+    if (alerta == null || alertasVistas.contains(indice)) return;
+    alertasVistas.add(indice);
+    if (!mounted) return;
+    await mostrarAlerta(context, alerta);
+  }
+
+  // ---------- Datos del paso de cálculo ----------
 
   void actualizarValor(String clave, String valor) {
     setState(() {
@@ -65,6 +156,8 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     });
   }
 
+  // ---------- Navegación entre pasos ----------
+
   /// ¿Se puede salir del paso actual? Los de cálculo necesitan datos válidos.
   bool get pasoActualCompleto {
     final paso = widget.protocolo.pasos[pasoActual];
@@ -74,13 +167,20 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     };
   }
 
-  void siguiente() {
+  Future<void> siguiente() async {
     // Seguros: no pasar del último paso ni avanzar con datos incompletos
     if (pasoActual >= widget.protocolo.numeroPasos - 1) return;
     if (!pasoActualCompleto) return;
+
+    if (_temporizadorPendiente(pasoActual)) {
+      final avanzar = await confirmarAvanceConTemporizador(context);
+      if (!avanzar || !mounted) return;
+    }
+
     setState(() {
       pasoActual++;
     });
+    await _alEntrarEnPaso(pasoActual);
   }
 
   void anterior() {
@@ -92,6 +192,11 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   }
 
   Future<void> terminar() async {
+    if (_temporizadorPendiente(pasoActual)) {
+      final avanzar = await confirmarAvanceConTemporizador(context);
+      if (!avanzar || !mounted) return;
+    }
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false, // no se cierra tocando fuera
@@ -118,11 +223,15 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     Navigator.pop(context); // 2º pop: vuelve a la lista
   }
 
+  // ---------- Pantalla ----------
+
   @override
   Widget build(BuildContext context) {
     final protocolo = widget.protocolo;
     final total = protocolo.numeroPasos;
     final paso = protocolo.pasos[pasoActual];
+    final alerta = paso.alerta;
+    final cuenta = cuentas[pasoActual];
     final esPrimero = pasoActual == 0;
     final esUltimo = pasoActual == total - 1;
     final puedeAvanzar = pasoActualCompleto;
@@ -154,21 +263,39 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
               const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
-                  child: switch (paso) {
-                    PasoInstrucciones p => Text(
-                        p.texto,
-                        style: const TextStyle(fontSize: 26, height: 1.4),
-                      ),
-                    PasoCalculo p => VistaCalculo(
-                        paso: p,
-                        muestras: muestras,
-                        valores: valores,
-                        onCambioValor: actualizarValor,
-                        onCambioMuestra: actualizarMuestra,
-                        onAnadirMuestra: anadirMuestra,
-                        onEliminarMuestra: eliminarMuestra,
-                      ),
-                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (alerta != null) ...[
+                        RecordatorioAlerta(alerta: alerta),
+                        const SizedBox(height: 16),
+                      ],
+                      switch (paso) {
+                        PasoInstrucciones p => Text(
+                            p.texto,
+                            style: const TextStyle(fontSize: 26, height: 1.4),
+                          ),
+                        PasoCalculo p => VistaCalculo(
+                            paso: p,
+                            muestras: muestras,
+                            valores: valores,
+                            onCambioValor: actualizarValor,
+                            onCambioMuestra: actualizarMuestra,
+                            onAnadirMuestra: anadirMuestra,
+                            onEliminarMuestra: eliminarMuestra,
+                          ),
+                      },
+                      if (cuenta != null) ...[
+                        const SizedBox(height: 24),
+                        VistaTemporizador(
+                          cuenta: cuenta,
+                          onIniciar: () => iniciarTemporizador(pasoActual),
+                          onPausar: () => pausarTemporizador(pasoActual),
+                          onReiniciar: () => reiniciarTemporizador(pasoActual),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
