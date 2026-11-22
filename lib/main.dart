@@ -43,36 +43,38 @@ class PantallaInicio extends StatelessWidget {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Tu asistente de protocolos de laboratorio',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                BotonInicio(
-                  icono: Icons.add,
-                  texto: 'Añadir protocolo nuevo',
-                  onPressed: () => mostrarProximamente(context, 'Añadir protocolo'),
-                ),
-                const SizedBox(height: 24),
-                BotonInicio(
-                  icono: Icons.folder_open,
-                  texto: 'Mis protocolos',
-                  onPressed: () => mostrarProximamente(context, 'Mis protocolos'),
-                ),
-                const SizedBox(height: 24),
-                BotonInicio(
-                  icono: Icons.help_outline,
-                  texto: 'Ayuda',
-                  onPressed: () => mostrarProximamente(context, 'Ayuda'),
-                  secundario: true,
-                ),
-              ],
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Tu asistente de protocolos de laboratorio',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  BotonInicio(
+                    icono: Icons.add,
+                    texto: 'Añadir protocolo nuevo',
+                    onPressed: () => mostrarProximamente(context, 'Añadir protocolo'),
+                  ),
+                  const SizedBox(height: 24),
+                  BotonInicio(
+                    icono: Icons.folder_open,
+                    texto: 'Mis protocolos',
+                    onPressed: () => mostrarProximamente(context, 'Mis protocolos'),
+                  ),
+                  const SizedBox(height: 24),
+                  BotonInicio(
+                    icono: Icons.help_outline,
+                    texto: 'Ayuda',
+                    onPressed: () => mostrarProximamente(context, 'Ayuda'),
+                    secundario: true,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
