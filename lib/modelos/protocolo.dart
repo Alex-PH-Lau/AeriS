@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
+import 'package:aeris/modelos/json.dart';
 import 'package:aeris/modelos/paso.dart';
 
 class Protocolo {
@@ -33,4 +34,20 @@ class Protocolo {
       pasos: pasos ?? this.pasos,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nombre': nombre,
+        'version': version,
+        'creado': creado.toIso8601String(), // "2026-11-22T00:00:00.000"
+        'pasos': [for (final paso in pasos) paso.toJson()],
+      };
+
+  factory Protocolo.fromJson(Map<String, dynamic> json) => Protocolo(
+        id: json['id'] as String,
+        nombre: json['nombre'] as String,
+        version: json['version'] as int,
+        creado: DateTime.parse(json['creado'] as String),
+        pasos: leerLista(json['pasos'], Paso.fromJson),
+      );
 }

@@ -4,15 +4,25 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:aeris/modelos/calculo.dart';
+import 'package:aeris/modelos/json.dart';
 
 class Temporizador {
   final Duration duracion;
   const Temporizador(this.duracion);
+
+  Map<String, dynamic> toJson() => {'segundos': duracion.inSeconds};
+
+  factory Temporizador.fromJson(Map<String, dynamic> json) =>
+      Temporizador(Duration(seconds: json['segundos'] as int));
 }
 
 class Alerta {
   final String mensaje;
   const Alerta(this.mensaje);
+
+  Map<String, dynamic> toJson() => {'mensaje': mensaje};
+
+  factory Alerta.fromJson(Map<String, dynamic> json) => Alerta(json['mensaje'] as String);
 }
 
 sealed class Paso {
@@ -21,6 +31,40 @@ sealed class Paso {
   final Alerta? alerta; // como máximo una
 
   const Paso({required this.titulo, this.temporizador, this.alerta});
+
+  /// Cada tipo de paso sabe convertirse en JSON. El campo 'tipo' dice cuál es.
+  Map<String, dynamic> toJson();
+
+  /// Mira el campo 'tipo' y crea el paso concreto que corresponde.
+  factory Paso.fromJson(Map<String, dynamic> json) {
+    final tipo = json['tipo'];
+    return switch (tipo) {
+      'instrucciones' => PasoInstrucciones.fromJson(json),
+      'calculo' => PasoCalculo.fromJson(json),
+      _ => throw FormatException('Tipo de paso desconocido: $tipo'),
+    };
+  }
+
+  /// Campos comunes a todos los pasos.
+  Map<String, dynamic> _comunesJson() {
+    final temporizador = this.temporizador;
+    final alerta = this.alerta;
+    return {
+      'titulo': titulo,
+      if (temporizador != null) 'temporizador': temporizador.toJson(),
+      if (alerta != null) 'alerta': alerta.toJson(),
+    };
+  }
+
+  static Temporizador? _leerTemporizador(Map<String, dynamic> json) {
+    final datos = json['temporizador'] as Map<String, dynamic>?;
+    return datos == null ? null : Temporizador.fromJson(datos);
+  }
+
+  static Alerta? _leerAlerta(Map<String, dynamic> json) {
+    final datos = json['alerta'] as Map<String, dynamic>?;
+    return datos == null ? null : Alerta.fromJson(datos);
+  }
 }
 
 class PasoInstrucciones extends Paso {
@@ -32,6 +76,20 @@ class PasoInstrucciones extends Paso {
     super.temporizador,
     super.alerta,
   });
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'tipo': 'instrucciones',
+        ..._comunesJson(),
+        'texto': texto,
+      };
+
+  factory PasoInstrucciones.fromJson(Map<String, dynamic> json) => PasoInstrucciones(
+        titulo: json['titulo'] as String,
+        texto: json['texto'] as String,
+        temporizador: Paso._leerTemporizador(json),
+        alerta: Paso._leerAlerta(json),
+      );
 }
 
 class PasoCalculo extends Paso {
@@ -64,6 +122,36 @@ class PasoCalculo extends Paso {
     super.temporizador,
     super.alerta,
   });
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'tipo': 'calculo',
+        ..._comunesJson(),
+        'volumenReaccion': volumenReaccion,
+        'volumenMolde': volumenMolde,
+        'margen': margen,
+        'modo': modo.name,
+        if (ngObjetivo != null) 'ngObjetivo': ngObjetivo,
+        'volumenMinimo': volumenMinimo,
+        'reactivos': [for (final reactivo in reactivos) reactivo.toJson()],
+        'tiposTubo': [for (final tipo in tiposTubo) tipo.toJson()],
+        'parametros': [for (final parametro in parametros) parametro.toJson()],
+      };
+
+  factory PasoCalculo.fromJson(Map<String, dynamic> json) => PasoCalculo(
+        titulo: json['titulo'] as String,
+        volumenReaccion: leerDouble(json['volumenReaccion']),
+        volumenMolde: leerDouble(json['volumenMolde']),
+        margen: leerDoubleOpcional(json['margen']) ?? 1.1,
+        modo: ModoMolde.values.byName(json['modo'] as String? ?? 'normalizado'),
+        ngObjetivo: leerDoubleOpcional(json['ngObjetivo']),
+        volumenMinimo: leerDoubleOpcional(json['volumenMinimo']) ?? 1.0,
+        reactivos: leerLista(json['reactivos'], Reactivo.fromJson),
+        tiposTubo: leerLista(json['tiposTubo'], TipoTubo.fromJson),
+        parametros: leerLista(json['parametros'], ParametroEntrada.fromJson),
+        temporizador: Paso._leerTemporizador(json),
+        alerta: Paso._leerAlerta(json),
+      );
 
   double get sumaReactivos {
     double suma = 0;

@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
+import 'package:aeris/modelos/json.dart';
+
 /// Muestra un número sin decimales sobrantes: 1.0 -> "1", 0.25 -> "0.25".
 String formatearNumero(double numero) {
   if (numero == numero.roundToDouble()) {
@@ -25,6 +27,18 @@ class Reactivo {
   });
 
   double volumenTotal(double factor) => volPorReaccion * factor;
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'volPorReaccion': volPorReaccion,
+        if (concentracion != null) 'concentracion': concentracion,
+      };
+
+  factory Reactivo.fromJson(Map<String, dynamic> json) => Reactivo(
+        nombre: json['nombre'] as String,
+        volPorReaccion: leerDouble(json['volPorReaccion']),
+        concentracion: json['concentracion'] as String?,
+      );
 }
 
 class TipoTubo {
@@ -44,6 +58,20 @@ class TipoTubo {
   bool get filasLibres => conDna && cantidadFija == null;
 
   String instruccion(double volumen) => '${formatearMicrolitros(volumen)} µL de $seAnade';
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        if (seAnade.isNotEmpty) 'seAnade': seAnade,
+        if (cantidadFija != null) 'cantidadFija': cantidadFija,
+        if (conDna) 'conDna': true,
+      };
+
+  factory TipoTubo.fromJson(Map<String, dynamic> json) => TipoTubo(
+        nombre: json['nombre'] as String,
+        seAnade: json['seAnade'] as String? ?? '',
+        cantidadFija: json['cantidadFija'] as int?,
+        conDna: json['conDna'] as bool? ?? false,
+      );
 }
 
 enum TipoParametro { numero, texto }
@@ -60,6 +88,20 @@ class ParametroEntrada {
     this.unidad,
     this.obligatorio = true,
   });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'tipo': tipo.name,
+        if (unidad != null) 'unidad': unidad,
+        'obligatorio': obligatorio,
+      };
+
+  factory ParametroEntrada.fromJson(Map<String, dynamic> json) => ParametroEntrada(
+        nombre: json['nombre'] as String,
+        tipo: TipoParametro.values.byName(json['tipo'] as String? ?? 'numero'),
+        unidad: json['unidad'] as String?,
+        obligatorio: json['obligatorio'] as bool? ?? true,
+      );
 }
 
 enum ModoMolde {
@@ -83,6 +125,20 @@ class Muestra {
     this.codigo = '',
     this.concentracion,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'tipo': tipo,
+        'codigo': codigo,
+        if (concentracion != null) 'concentracion': concentracion,
+      };
+
+  factory Muestra.fromJson(Map<String, dynamic> json) => Muestra(
+        id: json['id'] as String,
+        tipo: json['tipo'] as String,
+        codigo: json['codigo'] as String? ?? '',
+        concentracion: leerDoubleOpcional(json['concentracion']),
+      );
 }
 
 enum EstadoMuestra { correcta, diluir, huecoCompleto, sinConcentracion }
