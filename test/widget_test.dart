@@ -6,6 +6,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aeris/main.dart';
+import 'package:aeris/servicios/avisos.dart';
+
+import 'avisos_de_prueba.dart';
 
 /// Abre la app y entra en un protocolo de la lista.
 Future<void> abrirProtocolo(WidgetTester tester, String nombre) async {
@@ -41,7 +44,23 @@ Future<void> rellenarCalculo(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// De la lista al paso 4 de la electroforesis ("Correr el gel", 30 min).
+Future<void> irAlTemporizador(WidgetTester tester) async {
+  await abrirProtocolo(tester, 'Electroforesis en gel de agarosa (V.2)');
+  for (var i = 0; i < 3; i++) {
+    await tester.tap(find.text('Siguiente'));
+    await tester.pump();
+  }
+}
+
 void main() {
+  // Los tests no pueden usar las notificaciones reales del sistema
+  late AvisosDePrueba avisosFalsos;
+  setUp(() {
+    avisosFalsos = AvisosDePrueba();
+    avisos = avisosFalsos;
+  });
+
   testWidgets('La pantalla de inicio muestra los tres botones', (tester) async {
     await tester.pumpWidget(const AerisApp());
 
@@ -153,14 +172,37 @@ void main() {
     expect(find.text('2.00 µL de DNA + 3.00 µL de agua'), findsOneWidget);
   });
 
-  testWidgets('Con el temporizador en marcha pide confirmación para avanzar', (tester) async {
-    await abrirProtocolo(tester, 'Electroforesis en gel de agarosa (V.2)');
+  testWidgets('Iniciar el temporizador programa el aviso del sistema y pausarlo lo cancela', (tester) async {
+    await irAlTemporizador(tester);
 
-    // Paso 1 → 4 ("Correr el gel", con temporizador de 30 min)
-    for (var i = 0; i < 3; i++) {
-      await tester.tap(find.text('Siguiente'));
-      await tester.pump();
-    }
+    await tester.ensureVisible(find.text('Iniciar'));
+    await tester.tap(find.text('Iniciar'));
+    await tester.pump();
+
+    // El paso 4 tiene índice 3; el aviso queda programado para dentro de ~30 min
+    expect(avisosFalsos.programados.containsKey(3), isTrue);
+    final quedan = avisosFalsos.programados[3]!.difference(DateTime.now());
+    expect(quedan.inMinutes, inInclusiveRange(29, 30));
+
+    await tester.tap(find.text('Pausar'));
+    await tester.pump();
+    expect(avisosFalsos.programados, isEmpty);
+  });
+
+  testWidgets('Sin permiso de notificaciones avisa al usuario', (tester) async {
+    avisosFalsos.permiso = false;
+    await irAlTemporizador(tester);
+
+    await tester.ensureVisible(find.text('Iniciar'));
+    await tester.tap(find.text('Iniciar'));
+    await tester.pump();
+
+    expect(avisosFalsos.programados, isEmpty);
+    expect(find.textContaining('Sin permiso de notificaciones'), findsOneWidget);
+  });
+
+  testWidgets('Con el temporizador en marcha pide confirmación para avanzar', (tester) async {
+    await irAlTemporizador(tester);
     expect(find.text('Paso 4 de 5'), findsOneWidget);
     expect(find.text('30:00'), findsOneWidget);
 

@@ -15,6 +15,7 @@ import 'package:aeris/modelos/protocolo.dart';
 import 'package:aeris/pantallas/widgets/avisos.dart';
 import 'package:aeris/pantallas/widgets/vista_calculo.dart';
 import 'package:aeris/pantallas/widgets/vista_temporizador.dart';
+import 'package:aeris/servicios/avisos.dart';
 
 class PantallaEjecucion extends StatefulWidget {
   final Protocolo protocolo;
@@ -68,6 +69,13 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   @override
   void dispose() {
     _tic?.cancel(); // sin esto, el Timer seguiría vivo tras cerrar la pantalla
+
+    // Si se sale del protocolo, los avisos pendientes ya no tienen sentido
+    for (final entrada in cuentas.entries) {
+      if (entrada.value.enMarcha && !entrada.value.terminado) {
+        avisos.cancelar(entrada.key);
+      }
+    }
     super.dispose();
   }
 
@@ -95,14 +103,18 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     HapticFeedback.heavyImpact();
     SystemSound.play(SystemSoundType.alert);
     await mostrarFinTemporizador(context, widget.protocolo.pasos[indice].titulo);
+    // Ya lo has visto en la app: quitar la notificación de la bandeja
+    await avisos.cancelar(indice);
   }
 
   void iniciarTemporizador(int indice) {
     setState(() => cuentas[indice]?.iniciar());
+    _programarAviso(indice);
   }
 
   void pausarTemporizador(int indice) {
     setState(() => cuentas[indice]?.pausar());
+    avisos.cancelar(indice); // al reanudar se programará con la nueva hora de fin
   }
 
   void reiniciarTemporizador(int indice) {
@@ -110,6 +122,32 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
       cuentas[indice]?.reiniciar();
       finesAvisados.remove(indice);
     });
+    avisos.cancelar(indice);
+  }
+
+  /// Programa en el sistema la notificación para la hora de fin del temporizador.
+  Future<void> _programarAviso(int indice) async {
+    final fin = cuentas[indice]?.fin;
+    if (fin == null) return;
+
+    final permitido = await avisos.pedirPermiso();
+    if (!permitido) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sin permiso de notificaciones: el temporizador solo avisará con AeriS abierta.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await avisos.programarFinTemporizador(
+      id: indice,
+      titulo: widget.protocolo.pasos[indice].titulo,
+      fin: fin,
+    );
   }
 
   /// ¿Hay un temporizador corriendo en este paso que todavía no ha terminado?
