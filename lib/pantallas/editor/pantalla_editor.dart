@@ -59,21 +59,28 @@ class _PantallaEditorState extends State<PantallaEditor> {
               subtitle: const Text('Texto, con temporizador y alerta opcionales'),
               onTap: () => Navigator.pop(hojaContext, 'instrucciones'),
             ),
-            const ListTile(
+            ListTile(
               minTileHeight: 72,
-              enabled: false,
-              leading: Icon(Icons.calculate, size: 36),
-              title: Text('Cálculo de reactivos', style: TextStyle(fontSize: 20)),
-              subtitle: Text('Próximamente'),
+              // Por ahora solo uno por protocolo: la ejecución guarda un único juego de muestras
+              enabled: !borrador.tieneCalculo,
+              leading: const Icon(Icons.calculate, size: 36),
+              title: const Text('Cálculo de reactivos', style: TextStyle(fontSize: 20)),
+              subtitle: Text(borrador.tieneCalculo
+                  ? 'Ya hay un paso de cálculo en este protocolo'
+                  : 'Mastermix, muestras y normalización del DNA'),
+              onTap: () => Navigator.pop(hojaContext, 'calculo'),
             ),
             const SizedBox(height: 16),
           ],
         ),
       ),
     );
-    if (tipo != 'instrucciones' || !mounted) return;
+    if (tipo == null || !mounted) return;
 
-    final clave = borrador.anadirInstrucciones();
+    final clave = switch (tipo) {
+      'calculo' => borrador.anadirCalculo(),
+      _ => borrador.anadirInstrucciones(),
+    };
     setState(() => claveSeleccionada = clave);
     if (!dosPaneles) await _abrirPasoEnPantalla(clave, esNuevo: true);
   }

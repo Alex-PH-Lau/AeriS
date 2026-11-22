@@ -26,7 +26,11 @@ class _PantallaMisProtocolosState extends State<PantallaMisProtocolos> {
       MaterialPageRoute(builder: (context) => PantallaEditor(original: protocolo)),
     );
     if (guardado == true && mounted) {
-      setState(() => _protocolos = almacen.ultimasVersiones()); // ver la versión nueva
+      // Llaves y no flecha: con => la función DEVOLVERÍA el Future asignado,
+      // y setState no admite que su función devuelva un Future.
+      setState(() {
+        _protocolos = almacen.ultimasVersiones(); // ver la versión nueva
+      });
     }
   }
 

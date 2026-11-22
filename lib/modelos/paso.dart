@@ -171,6 +171,121 @@ class PasoCalculo extends Paso {
         alerta: Paso._leerAlerta(json),
       );
 
+  /// Copia con cambios (ver [PasoInstrucciones.copiar] para los parámetros sin…).
+  PasoCalculo copiar({
+    String? titulo,
+    double? volumenReaccion,
+    double? volumenMolde,
+    double? margen,
+    ModoMolde? modo,
+    double? ngObjetivo,
+    double? volumenMinimo,
+    List<Reactivo>? reactivos,
+    List<TipoTubo>? tiposTubo,
+    List<ParametroEntrada>? parametros,
+    Temporizador? temporizador,
+    Alerta? alerta,
+    bool sinTemporizador = false,
+    bool sinAlerta = false,
+  }) {
+    return PasoCalculo(
+      titulo: titulo ?? this.titulo,
+      volumenReaccion: volumenReaccion ?? this.volumenReaccion,
+      volumenMolde: volumenMolde ?? this.volumenMolde,
+      margen: margen ?? this.margen,
+      modo: modo ?? this.modo,
+      ngObjetivo: ngObjetivo ?? this.ngObjetivo,
+      volumenMinimo: volumenMinimo ?? this.volumenMinimo,
+      reactivos: reactivos ?? this.reactivos,
+      tiposTubo: tiposTubo ?? this.tiposTubo,
+      parametros: parametros ?? this.parametros,
+      temporizador: sinTemporizador ? null : (temporizador ?? this.temporizador),
+      alerta: sinAlerta ? null : (alerta ?? this.alerta),
+    );
+  }
+
+  /// Lo que está mal configurado en este paso. Vacía si está todo bien.
+  List<String> problemas() {
+    final lista = <String>[];
+
+    // ---------- Volúmenes ----------
+    if (volumenReaccion <= 0) {
+      lista.add('El volumen de reacción tiene que ser mayor que 0.');
+    }
+    if (volumenMolde <= 0) {
+      lista.add(modo == ModoMolde.normalizado
+          ? 'El hueco para DNA + agua tiene que ser mayor que 0.'
+          : 'El volumen de DNA por tubo tiene que ser mayor que 0.');
+    }
+    if (margen < 1) lista.add('El margen no puede ser negativo.');
+    if (modo == ModoMolde.normalizado) {
+      final ng = ngObjetivo;
+      if (ng == null || ng <= 0) lista.add('Indica los ng de DNA por reacción.');
+      if (volumenMinimo <= 0) {
+        lista.add('El volumen mínimo pipeteable tiene que ser mayor que 0.');
+      } else if (volumenMinimo > volumenMolde + _tolerancia) {
+        lista.add('El volumen mínimo pipeteable no puede ser mayor que el hueco.');
+      }
+    }
+
+    // ---------- Reactivos ----------
+    if (reactivos.isEmpty) lista.add('Añade al menos un reactivo.');
+    final nombresReactivos = <String>{};
+    for (final reactivo in reactivos) {
+      final nombre = reactivo.nombre.trim();
+      if (nombre.isEmpty) {
+        lista.add('Hay un reactivo sin nombre.');
+        continue;
+      }
+      if (nombre.toLowerCase() == 'agua') {
+        lista.add('"Agua" no puede ser un reactivo: AeriS la calcula sola.');
+      }
+      if (!nombresReactivos.add(nombre.toLowerCase())) {
+        lista.add('El reactivo "$nombre" está repetido.');
+      }
+      if (reactivo.volPorReaccion <= 0) {
+        lista.add('El reactivo "$nombre" necesita un volumen mayor que 0.');
+      }
+    }
+    if (volumenReaccion - sumaReactivos - volumenMolde < -_tolerancia) {
+      lista.add('Los reactivos y el hueco suman más que el volumen de reacción.');
+    }
+
+    // ---------- Tipos de tubo ----------
+    if (!tiposTubo.any((tipo) => tipo.filasLibres)) {
+      lista.add('Falta un tipo de tubo con DNA y sin cantidad fija (las muestras).');
+    }
+    final nombresTubos = <String>{};
+    for (final tipo in tiposTubo) {
+      final nombre = tipo.nombre.trim();
+      if (nombre.isEmpty) {
+        lista.add('Hay un tipo de tubo sin nombre.');
+        continue;
+      }
+      if (!nombresTubos.add(nombre.toLowerCase())) {
+        lista.add('El tipo de tubo "$nombre" está repetido.');
+      }
+      final cantidad = tipo.cantidadFija;
+      if (cantidad != null && cantidad <= 0) {
+        lista.add('"$nombre": la cantidad tiene que ser mayor que 0.');
+      }
+      if (!tipo.conDna) {
+        if (cantidad == null) lista.add('"$nombre": indica cuántos tubos hay.');
+        if (tipo.seAnade.trim().isEmpty) {
+          lista.add('"$nombre": indica qué se añade en lugar de DNA.');
+        }
+      }
+    }
+
+    // ---------- Datos de la ejecución ----------
+    for (final parametro in parametros) {
+      if (parametro.nombre.trim().isEmpty) {
+        lista.add('Hay un dato de la ejecución sin nombre.');
+      }
+    }
+    return lista;
+  }
+
   double get sumaReactivos {
     double suma = 0;
     for (final reactivo in reactivos) {

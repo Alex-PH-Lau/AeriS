@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
+import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
 
@@ -63,6 +64,30 @@ class BorradorProtocolo {
     return elemento.clave;
   }
 
+  /// ¿Hay ya un paso de cálculo? Por ahora solo se permite uno por protocolo.
+  bool get tieneCalculo => _pasos.any((elemento) => elemento.paso is PasoCalculo);
+
+  /// Añade un paso de cálculo con valores habituales de una PCR y devuelve su clave.
+  String anadirCalculo() {
+    final elemento = ElementoPaso(
+      clave: _nuevaClave(),
+      paso: const PasoCalculo(
+        titulo: 'Preparar el mastermix',
+        volumenReaccion: 25,
+        volumenMolde: 5,
+        ngObjetivo: 50,
+        reactivos: [],
+        tiposTubo: [
+          TipoTubo(nombre: 'Muestra', conDna: true),
+          TipoTubo(nombre: 'Control negativo', seAnade: 'agua', cantidadFija: 1),
+        ],
+      ),
+    );
+    _pasos.add(elemento);
+    _modificado = true;
+    return elemento.clave;
+  }
+
   void reemplazar(String clave, Paso paso) {
     final indice = indiceDe(clave);
     if (indice < 0) return;
@@ -107,6 +132,16 @@ class BorradorProtocolo {
       if (alerta != null && alerta.mensaje.trim().isEmpty) {
         lista.add('Paso $numero: la alerta no tiene mensaje.');
       }
+      if (paso is PasoCalculo) {
+        for (final problema in paso.problemas()) {
+          lista.add('Paso $numero: $problema');
+        }
+      }
+    }
+
+    final pasosCalculo = _pasos.where((elemento) => elemento.paso is PasoCalculo).length;
+    if (pasosCalculo > 1) {
+      lista.add('Por ahora, un protocolo solo puede tener un paso de cálculo.');
     }
     return lista;
   }

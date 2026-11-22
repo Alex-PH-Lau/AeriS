@@ -5,8 +5,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
+import 'package:aeris/pantallas/editor/editor_calculo.dart';
+
+const _estilo = TextStyle(fontSize: 20);
 
 /// Formulario de un paso. No sabe si está en la mitad derecha de una tablet
 /// o en una pantalla de móvil: eso lo decide quien lo contiene.
@@ -20,7 +24,7 @@ class EditorPaso extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (paso) {
       PasoInstrucciones p => _EditorInstrucciones(paso: p, onCambio: onCambio),
-      PasoCalculo() => const _AvisoCalculo(),
+      PasoCalculo p => EditorCalculo(paso: p, onCambio: onCambio),
     };
   }
 }
@@ -33,23 +37,10 @@ class _EditorInstrucciones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final temporizador = paso.temporizador;
-    final alerta = paso.alerta;
-    const estilo = TextStyle(fontSize: 20);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextFormField(
-          initialValue: paso.titulo,
-          decoration: const InputDecoration(
-            labelText: 'Título del paso',
-            border: OutlineInputBorder(),
-          ),
-          style: estilo,
-          onChanged: (texto) => onCambio(paso.copiar(titulo: texto)),
-        ),
+        CampoTitulo(titulo: paso.titulo, onCambio: (t) => onCambio(paso.copiar(titulo: t))),
         const SizedBox(height: 16),
         TextFormField(
           initialValue: paso.texto,
@@ -59,43 +50,97 @@ class _EditorInstrucciones extends StatelessWidget {
             border: OutlineInputBorder(),
             alignLabelWithHint: true,
           ),
-          style: estilo,
+          style: _estilo,
           minLines: 4,
           maxLines: null, // crece con el texto
           onChanged: (texto) => onCambio(paso.copiar(texto: texto)),
         ),
-
-        // ---------- Herramientas del paso ----------
         const SizedBox(height: 32),
+        SeccionHerramientas(
+          temporizador: paso.temporizador,
+          alerta: paso.alerta,
+          onTemporizador: (t) => onCambio(
+            t == null ? paso.copiar(sinTemporizador: true) : paso.copiar(temporizador: t),
+          ),
+          onAlerta: (a) => onCambio(
+            a == null ? paso.copiar(sinAlerta: true) : paso.copiar(alerta: a),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Campo del título, igual en todos los tipos de paso.
+class CampoTitulo extends StatelessWidget {
+  final String titulo;
+  final ValueChanged<String> onCambio;
+
+  const CampoTitulo({super.key, required this.titulo, required this.onCambio});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      initialValue: titulo,
+      decoration: const InputDecoration(
+        labelText: 'Título del paso',
+        border: OutlineInputBorder(),
+      ),
+      style: _estilo,
+      onChanged: onCambio,
+    );
+  }
+}
+
+/// Temporizador y alerta: las herramientas que puede llevar cualquier paso.
+/// Avisa con null cuando se quita una herramienta.
+class SeccionHerramientas extends StatelessWidget {
+  final Temporizador? temporizador;
+  final Alerta? alerta;
+  final ValueChanged<Temporizador?> onTemporizador;
+  final ValueChanged<Alerta?> onAlerta;
+
+  const SeccionHerramientas({
+    super.key,
+    required this.temporizador,
+    required this.alerta,
+    required this.onTemporizador,
+    required this.onAlerta,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final temporizador = this.temporizador;
+    final alerta = this.alerta;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         Text('Herramientas del paso', style: tema.textTheme.titleLarge),
         const SizedBox(height: 8),
-
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           secondary: const Icon(Icons.timer, size: 32),
-          title: const Text('Temporizador', style: estilo),
+          title: const Text('Temporizador', style: _estilo),
           value: temporizador != null,
-          onChanged: (activar) => onCambio(
-            activar
-                ? paso.copiar(temporizador: const Temporizador(Duration(minutes: 5)))
-                : paso.copiar(sinTemporizador: true),
+          onChanged: (activar) => onTemporizador(
+            activar ? const Temporizador(Duration(minutes: 5)) : null,
           ),
         ),
-        if (temporizador != null) _CamposDuracion(
-          duracion: temporizador.duracion,
-          onCambio: (duracion) => onCambio(paso.copiar(temporizador: Temporizador(duracion))),
-        ),
-
+        if (temporizador != null)
+          _CamposDuracion(
+            duracion: temporizador.duracion,
+            onCambio: (duracion) => onTemporizador(Temporizador(duracion)),
+          ),
         const SizedBox(height: 8),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           secondary: Icon(Icons.warning_amber_rounded, size: 32, color: tema.colorScheme.error),
-          title: const Text('Alerta', style: estilo),
+          title: const Text('Alerta', style: _estilo),
           subtitle: const Text('Ventana que no deja seguir sin pulsar "Entendido"'),
           value: alerta != null,
-          onChanged: (activar) => onCambio(
-            activar ? paso.copiar(alerta: const Alerta('')) : paso.copiar(sinAlerta: true),
-          ),
+          onChanged: (activar) => onAlerta(activar ? const Alerta('') : null),
         ),
         if (alerta != null)
           TextFormField(
@@ -105,9 +150,9 @@ class _EditorInstrucciones extends StatelessWidget {
               hintText: 'Por ejemplo: mantén la enzima en hielo',
               border: OutlineInputBorder(),
             ),
-            style: estilo,
+            style: _estilo,
             maxLines: null,
-            onChanged: (texto) => onCambio(paso.copiar(alerta: Alerta(texto))),
+            onChanged: (texto) => onAlerta(Alerta(texto)),
           ),
       ],
     );
@@ -158,28 +203,40 @@ class _CamposDuracion extends StatelessWidget {
   }
 }
 
-class _AvisoCalculo extends StatelessWidget {
-  const _AvisoCalculo();
+/// Campo para un número con decimales (acepta coma o punto).
+/// Solo avisa cuando el texto es un número válido; si no, lo marca en rojo.
+class CampoNumero extends StatelessWidget {
+  final String etiqueta;
+  final double? valor;
+  final ValueChanged<double> onCambio;
+  final String? ayuda;
+
+  const CampoNumero({
+    super.key,
+    required this.etiqueta,
+    required this.valor,
+    required this.onCambio,
+    this.ayuda,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Row(
-          children: [
-            Icon(Icons.calculate, size: 40),
-            SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                'Paso de cálculo de reactivos. Su editor llegará en la próxima lección; '
-                'de momento puedes moverlo o borrarlo.',
-                style: TextStyle(fontSize: 20),
-              ),
-            ),
-          ],
-        ),
+    final valor = this.valor;
+    return TextFormField(
+      initialValue: valor == null ? '' : formatearNumero(valor),
+      decoration: InputDecoration(
+        labelText: etiqueta,
+        helperText: ayuda,
+        border: const OutlineInputBorder(),
       ),
+      style: _estilo,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (texto) => leerNumero(texto) == null ? 'Escribe un número' : null,
+      onChanged: (texto) {
+        final numero = leerNumero(texto);
+        if (numero != null) onCambio(numero);
+      },
     );
   }
 }
