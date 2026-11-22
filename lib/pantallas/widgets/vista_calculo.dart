@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
+import 'package:aeris/tema.dart';
 
 /// Contenido de un paso de cálculo: tabla de muestras, datos de la ejecución
 /// y resultado. No guarda nada: lo recibe de la pantalla y le avisa de cada cambio.
@@ -41,7 +42,7 @@ class VistaCalculo extends StatelessWidget {
       children: [
         // ---------- Muestras ----------
         Text('Muestras', style: tema.textTheme.titleLarge),
-        const SizedBox(height: 4),
+        const SizedBox(height: Espacio.minimo),
         Text(
           paso.modo == ModoMolde.normalizado
               ? '${formatearNumero(paso.ngObjetivo ?? 0)} ng de DNA por reacción · '
@@ -49,7 +50,7 @@ class VistaCalculo extends StatelessWidget {
               : '${formatearMicrolitros(paso.volumenMolde)} µL de DNA en cada tubo',
           style: tema.textTheme.bodyLarge,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Espacio.medio),
         for (var i = 0; i < muestras.length; i++)
           _TarjetaMuestra(
             key: ValueKey(muestras[i].id),
@@ -63,50 +64,45 @@ class VistaCalculo extends StatelessWidget {
         for (final tipo in paso.tiposTubo)
           if (tipo.filasLibres)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: Espacio.pequeno),
               child: SizedBox(
-                height: 64,
+                height: Medida.boton,
                 child: OutlinedButton.icon(
                   onPressed: () => onAnadirMuestra(tipo.nombre),
-                  icon: const Icon(Icons.add, size: 28),
-                  label: Text(
-                    'Añadir ${tipo.nombre.toLowerCase()}',
-                    style: const TextStyle(fontSize: 20),
-                  ),
+                  icon: const Icon(Icons.add),
+                  label: Text('Añadir ${tipo.nombre.toLowerCase()}'),
                 ),
               ),
             ),
 
         // ---------- Datos de la ejecución ----------
         if (paso.parametros.isNotEmpty) ...[
-          const SizedBox(height: 32),
+          const SizedBox(height: Espacio.extra),
           Text('Datos de esta ejecución', style: tema.textTheme.titleLarge),
-          const SizedBox(height: 16),
+          const SizedBox(height: Espacio.normal),
           for (final parametro in paso.parametros) ...[
             TextFormField(
               key: ValueKey('param-${parametro.nombre}'),
               initialValue: valores[parametro.nombre],
               decoration: InputDecoration(
                 labelText: etiquetaParametro(parametro),
-                border: const OutlineInputBorder(),
               ),
-              style: const TextStyle(fontSize: 22),
               keyboardType: parametro.tipo == TipoParametro.numero
                   ? const TextInputType.numberWithOptions(decimal: true)
                   : TextInputType.text,
               onChanged: (texto) => onCambioValor(parametro.nombre, texto),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Espacio.normal),
           ],
         ],
 
         // ---------- Mastermix ----------
-        const SizedBox(height: 24),
+        const SizedBox(height: Espacio.grande),
         if (muestras.isNotEmpty) _VistaMastermix(paso: paso, resultado: resultado, muestras: muestras),
 
         // ---------- Por qué no se puede avanzar ----------
         if (problema != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: Espacio.normal),
           Text(
             problema,
             style: tema.textTheme.titleMedium?.copyWith(color: tema.colorScheme.error),
@@ -144,7 +140,7 @@ class _TarjetaMuestra extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Espacio.normal),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -157,9 +153,7 @@ class _TarjetaMuestra extends StatelessWidget {
                     initialValue: muestra.codigo,
                     decoration: InputDecoration(
                       labelText: 'Código · ${muestra.tipo}',
-                      border: const OutlineInputBorder(),
                     ),
-                    style: const TextStyle(fontSize: 22),
                     onChanged: (texto) => onCambio(Muestra(
                       id: muestra.id,
                       tipo: muestra.tipo,
@@ -168,7 +162,7 @@ class _TarjetaMuestra extends StatelessWidget {
                     )),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Espacio.medio),
                 Expanded(
                   flex: 2,
                   child: TextFormField(
@@ -176,9 +170,7 @@ class _TarjetaMuestra extends StatelessWidget {
                     initialValue: concentracion == null ? '' : formatearNumero(concentracion),
                     decoration: InputDecoration(
                       labelText: normalizado ? 'ng/µL' : 'ng/µL · opcional',
-                      border: const OutlineInputBorder(),
                     ),
-                    style: const TextStyle(fontSize: 22),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     onChanged: (texto) => onCambio(Muestra(
                       id: muestra.id,
@@ -190,14 +182,13 @@ class _TarjetaMuestra extends StatelessWidget {
                 ),
                 if (sePuedeQuitar)
                   IconButton(
-                    iconSize: 32,
                     tooltip: 'Quitar muestra',
                     onPressed: onQuitar,
                     icon: const Icon(Icons.delete_outline),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Espacio.medio),
             _lineaResultado(context),
           ],
         ),
@@ -214,6 +205,7 @@ class _TarjetaMuestra extends StatelessWidget {
 
     return switch (resultado.estado) {
       EstadoMuestra.correcta => _linea(
+          context,
           Icons.check_circle,
           colores.primary,
           resultado.volumenAgua > 0
@@ -222,17 +214,20 @@ class _TarjetaMuestra extends StatelessWidget {
         ),
       EstadoMuestra.diluir => factor == null
           ? _linea(
+              context,
               Icons.error,
               colores.error,
               'Demasiado concentrada: diluye más de 1:100 y vuelve a medir.',
             )
           : _linea(
+              context,
               Icons.warning_amber,
               Colors.orange.shade800,
               'Diluye 1:$factor (quedará a ${formatearNumero(concentracion / factor)} ng/µL) '
               'y pon $dna µL de DNA + $agua µL de agua',
             ),
       EstadoMuestra.huecoCompleto => _linea(
+          context,
           Icons.info,
           Colors.orange.shade800,
           'Poco concentrada: pon $dna µL '
@@ -240,6 +235,7 @@ class _TarjetaMuestra extends StatelessWidget {
           '${formatearNumero(paso.ngObjetivo ?? 0)} ng). Quedará anotado.',
         ),
       EstadoMuestra.sinConcentracion => _linea(
+          context,
           Icons.edit,
           colores.outline,
           'Introduce la concentración.',
@@ -247,14 +243,17 @@ class _TarjetaMuestra extends StatelessWidget {
     };
   }
 
-  Widget _linea(IconData icono, Color color, String texto) {
+  Widget _linea(BuildContext context, IconData icono, Color color, String texto) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icono, color: color, size: 28),
-        const SizedBox(width: 8),
+        Icon(icono, color: color, size: Medida.icono),
+        const SizedBox(width: Espacio.pequeno),
         Expanded(
-          child: Text(texto, style: TextStyle(fontSize: 20, color: color)),
+          child: Text(
+            texto,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: color),
+          ),
         ),
       ],
     );
@@ -283,13 +282,13 @@ class _VistaMastermix extends StatelessWidget {
       return Card(
         color: tema.colorScheme.errorContainer,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Espacio.normal),
           child: Text(
             'Los reactivos y el hueco suman más que el volumen de reacción '
             '(${formatearMicrolitros(paso.volumenReaccion)} µL). '
             'Sobran ${(-resultado.aguaPorTubo).toStringAsFixed(2)} µL por tubo. '
             'Revisa el protocolo.',
-            style: TextStyle(fontSize: 20, color: tema.colorScheme.onErrorContainer),
+            style: tema.textTheme.bodyLarge?.copyWith(color: tema.colorScheme.onErrorContainer),
           ),
         ),
       );
@@ -305,8 +304,11 @@ class _VistaMastermix extends StatelessWidget {
           'Mastermix para ${resultado.totalTubos} tubos (+$porcentaje %)',
           style: tema.textTheme.titleLarge,
         ),
-        const SizedBox(height: 12),
-        Table(
+        const SizedBox(height: Espacio.medio),
+        // Las celdas heredan este estilo; cada una solo decide si va en negrita
+        DefaultTextStyle.merge(
+          style: tema.textTheme.bodyLarge,
+          child: Table(
           columnWidths: const {
             0: FlexColumnWidth(2),
             1: FlexColumnWidth(1),
@@ -331,22 +333,23 @@ class _VistaMastermix extends StatelessWidget {
             _fila('Total', '', resultado.volumenTotal.toStringAsFixed(2), negrita: true),
           ],
         ),
-        const SizedBox(height: 24),
+        ),
+        const SizedBox(height: Espacio.grande),
         Text(
           'Reparte $mixPorTubo µL de mastermix en cada tubo y añade:',
           style: tema.textTheme.titleMedium,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Espacio.pequeno),
         for (final tipo in paso.tiposTubo)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: Espacio.minimo),
             child: Text(
               tipo.conDna
                   ? '• ${muestras.where((m) => m.tipo == tipo.nombre).length} × '
                       '${tipo.nombre}: el DNA y el agua de su tarjeta'
                   : '• ${tipo.cantidadFija ?? 0} × ${tipo.nombre}: '
                       '${tipo.instruccion(paso.volumenMolde)}',
-              style: const TextStyle(fontSize: 20),
+              style: tema.textTheme.bodyLarge,
             ),
           ),
       ],
@@ -355,13 +358,12 @@ class _VistaMastermix extends StatelessWidget {
 
   TableRow _fila(String reactivo, String concentracion, String volumen, {bool negrita = false}) {
     final estilo = TextStyle(
-      fontSize: 20,
       fontWeight: negrita ? FontWeight.bold : FontWeight.normal,
     );
 
     Widget celda(String texto, {TextAlign alineacion = TextAlign.left}) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: Espacio.pequeno, horizontal: Espacio.minimo),
         child: Text(texto, style: estilo, textAlign: alineacion),
       );
     }

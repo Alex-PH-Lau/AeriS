@@ -9,6 +9,7 @@ import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
 import 'package:aeris/pantallas/editor/editor_paso.dart';
 import 'package:aeris/servicios/almacen.dart';
+import 'package:aeris/tema.dart';
 
 /// A partir de este ancho (en píxeles lógicos) se usan dos paneles.
 /// Tablet en horizontal y PC: dos paneles. Móvil y tablet en vertical: uno.
@@ -48,29 +49,27 @@ class _PantallaEditorState extends State<PantallaEditor> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Añadir paso', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.all(Espacio.normal),
+              child: Text('Añadir paso', style: Theme.of(hojaContext).textTheme.titleLarge),
             ),
             ListTile(
-              minTileHeight: 72,
-              leading: const Icon(Icons.article, size: 36),
-              title: const Text('Instrucciones', style: TextStyle(fontSize: 20)),
+              leading: const Icon(Icons.article, size: Medida.iconoGrande),
+              title: const Text('Instrucciones'),
               subtitle: const Text('Texto, con temporizador y alerta opcionales'),
               onTap: () => Navigator.pop(hojaContext, 'instrucciones'),
             ),
             ListTile(
-              minTileHeight: 72,
               // Por ahora solo uno por protocolo: la ejecución guarda un único juego de muestras
               enabled: !borrador.tieneCalculo,
-              leading: const Icon(Icons.calculate, size: 36),
-              title: const Text('Cálculo de reactivos', style: TextStyle(fontSize: 20)),
+              leading: const Icon(Icons.calculate, size: Medida.iconoGrande),
+              title: const Text('Cálculo de reactivos'),
               subtitle: Text(borrador.tieneCalculo
                   ? 'Ya hay un paso de cálculo en este protocolo'
                   : 'Mastermix, muestras y normalización del DNA'),
               onTap: () => Navigator.pop(hojaContext, 'calculo'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Espacio.normal),
           ],
         ),
       ),
@@ -92,17 +91,15 @@ class _PantallaEditorState extends State<PantallaEditor> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('¿Borrar el paso ${indice + 1}?'),
-        content: Text(titulo.isEmpty ? 'Paso sin título.' : titulo, style: const TextStyle(fontSize: 20)),
+        content: Text(titulo.isEmpty ? 'Paso sin título.' : titulo),
         actions: [
           OutlinedButton(
-            style: OutlinedButton.styleFrom(minimumSize: const Size(120, 64)),
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar', style: TextStyle(fontSize: 20)),
+            child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(120, 64)),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Borrar', style: TextStyle(fontSize: 20)),
+            child: const Text('Borrar'),
           ),
         ],
       ),
@@ -145,7 +142,7 @@ class _PantallaEditorState extends State<PantallaEditor> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          icon: const Icon(Icons.rule, size: 56),
+          icon: const Icon(Icons.rule, size: Medida.iconoAviso),
           title: const Text('Falta completar algunas cosas'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -153,16 +150,15 @@ class _PantallaEditorState extends State<PantallaEditor> {
             children: [
               for (final problema in problemas)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text('• $problema', style: const TextStyle(fontSize: 18)),
+                  padding: const EdgeInsets.symmetric(vertical: Espacio.minimo),
+                  child: Text('• $problema'),
                 ),
             ],
           ),
           actions: [
             FilledButton(
-              style: FilledButton.styleFrom(minimumSize: const Size(120, 64)),
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Entendido', style: TextStyle(fontSize: 20)),
+              child: const Text('Entendido'),
             ),
           ],
         ),
@@ -185,19 +181,17 @@ class _PantallaEditorState extends State<PantallaEditor> {
     final salir = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        icon: const Icon(Icons.edit_off, size: 56),
+        icon: const Icon(Icons.edit_off, size: Medida.iconoAviso),
         title: const Text('Hay cambios sin guardar'),
-        content: const Text('Si sales ahora, se perderán.', style: TextStyle(fontSize: 20)),
+        content: const Text('Si sales ahora, se perderán.'),
         actions: [
           OutlinedButton(
-            style: OutlinedButton.styleFrom(minimumSize: const Size(120, 64)),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Salir sin guardar', style: TextStyle(fontSize: 18)),
+            child: const Text('Salir sin guardar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(120, 64)),
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Seguir editando', style: TextStyle(fontSize: 18)),
+            child: const Text('Seguir editando'),
           ),
         ],
       ),
@@ -225,11 +219,11 @@ class _PantallaEditorState extends State<PantallaEditor> {
           title: Text(titulo),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.only(right: Espacio.normal),
               child: FilledButton.icon(
                 onPressed: _guardar,
                 icon: const Icon(Icons.save),
-                label: const Text('Guardar', style: TextStyle(fontSize: 18)),
+                label: const Text('Guardar'),
               ),
             ),
           ],
@@ -278,23 +272,22 @@ class _PantallaEditorState extends State<PantallaEditor> {
     if (clave == null || indice < 0) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: EdgeInsets.all(Espacio.extra),
           child: Text(
             'Elige un paso de la lista para editarlo, o añade uno nuevo.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20),
           ),
         ),
       );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Espacio.grande),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Paso ${indice + 1}', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
+          const SizedBox(height: Espacio.normal),
           EditorPaso(
             key: ValueKey(clave), // otro paso = formulario nuevo
             paso: borrador.pasos[indice].paso,
@@ -336,24 +329,23 @@ class _PanelLista extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Espacio.normal),
           child: TextFormField(
             initialValue: borrador.nombre,
             decoration: const InputDecoration(
               labelText: 'Nombre del protocolo',
-              border: OutlineInputBorder(),
             ),
-            style: const TextStyle(fontSize: 22),
+            style: Theme.of(context).textTheme.titleLarge, // el nombre destaca sobre lo demás
             onChanged: onNombre,
           ),
         ),
         Expanded(
           child: pasos.isEmpty
               ? const Center(
-                  child: Text('Todavía no hay pasos.', style: TextStyle(fontSize: 20)),
+                  child: Text('Todavía no hay pasos.'),
                 )
               : ReorderableListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: Espacio.normal),
                   buildDefaultDragHandles: false, // usamos un asa visible
                   itemCount: pasos.length,
                   onReorder: onMover,
@@ -371,13 +363,13 @@ class _PanelLista extends StatelessWidget {
                 ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Espacio.normal),
           child: SizedBox(
-            height: 64,
+            height: Medida.boton,
             child: FilledButton.icon(
               onPressed: onAnadir,
-              icon: const Icon(Icons.add, size: 32),
-              label: const Text('Añadir paso', style: TextStyle(fontSize: 20)),
+              icon: const Icon(Icons.add),
+              label: const Text('Añadir paso'),
             ),
           ),
         ),
@@ -416,18 +408,13 @@ class _FilaPaso extends StatelessWidget {
     return Card(
       child: ListTile(
         selected: seleccionado,
-        minTileHeight: 72,
         leading: ReorderableDragStartListener(
           index: indice,
-          child: const Icon(Icons.drag_handle, size: 32), // arrastrar con dedo o ratón
+          child: const Icon(Icons.drag_handle, size: Medida.icono), // arrastrar con dedo o ratón
         ),
-        title: Text(
-          '${indice + 1}. ${paso.titulo.isEmpty ? '(sin título)' : paso.titulo}',
-          style: const TextStyle(fontSize: 18),
-        ),
+        title: Text('${indice + 1}. ${paso.titulo.isEmpty ? '(sin título)' : paso.titulo}'),
         subtitle: Text(extras.isEmpty ? tipo : '$tipo  $extras'),
         trailing: IconButton(
-          iconSize: 28,
           tooltip: 'Borrar paso',
           onPressed: onBorrar,
           icon: const Icon(Icons.delete_outline),
@@ -462,18 +449,16 @@ class _PantallaPasoSueltoState extends State<_PantallaPasoSuelto> {
     final descartar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        icon: const Icon(Icons.edit_off, size: 56),
+        icon: const Icon(Icons.edit_off, size: Medida.iconoAviso),
         title: const Text('¿Descartar los cambios de este paso?'),
         actions: [
           OutlinedButton(
-            style: OutlinedButton.styleFrom(minimumSize: const Size(120, 64)),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Descartar', style: TextStyle(fontSize: 18)),
+            child: const Text('Descartar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(120, 64)),
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Seguir editando', style: TextStyle(fontSize: 18)),
+            child: const Text('Seguir editando'),
           ),
         ],
       ),
@@ -499,7 +484,7 @@ class _PantallaPasoSueltoState extends State<_PantallaPasoSuelto> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(Espacio.grande),
                   child: EditorPaso(
                     paso: paso,
                     onCambio: (nuevo) => setState(() {
@@ -511,13 +496,13 @@ class _PantallaPasoSueltoState extends State<_PantallaPasoSuelto> {
               ),
               // Abajo y grande: a mano del pulgar y cómodo con guantes
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(Espacio.normal),
                 child: SizedBox(
-                  height: 72,
+                  height: Medida.botonPrincipal,
                   child: FilledButton.icon(
                     onPressed: _guardar,
-                    icon: const Icon(Icons.check, size: 32),
-                    label: const Text('Guardar paso', style: TextStyle(fontSize: 22)),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Guardar paso'),
                   ),
                 ),
               ),

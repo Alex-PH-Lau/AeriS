@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:aeris/pantallas/inicio.dart';
 import 'package:aeris/servicios/almacen.dart';
 import 'package:aeris/servicios/avisos.dart';
+import 'package:aeris/tema.dart';
 
 Future<void> main() async {
   // Necesario antes de usar plugins si main() hace algo antes de runApp
@@ -24,11 +25,8 @@ class AerisApp extends StatelessWidget {
     return MaterialApp(
       title: 'AeriS',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 95, 0, 0),
-        ),
-      ),
+      theme: temaAeris(),
+      darkTheme: temaAeris(brillo: Brightness.dark), // sigue el modo del sistema
       home: const PantallaInicio(),
     );
   }

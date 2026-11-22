@@ -5,11 +5,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:aeris/modelos/paso.dart';
+import 'package:aeris/tema.dart';
 
 /// Alerta de un paso crítico: ventana muy visible que no se cierra
 /// hasta pulsar "Entendido" (ni tocando fuera, ni con el botón atrás).
 Future<void> mostrarAlerta(BuildContext context, Alerta alerta) {
   final colores = Theme.of(context).colorScheme;
+  final textos = Theme.of(context).textTheme;
 
   return showDialog<void>(
     context: context,
@@ -18,11 +20,10 @@ Future<void> mostrarAlerta(BuildContext context, Alerta alerta) {
       canPop: false, // el botón atrás de Android no la cierra
       child: AlertDialog(
         backgroundColor: colores.errorContainer,
-        icon: Icon(Icons.warning_amber_rounded, size: 72, color: colores.error),
+        icon: Icon(Icons.warning_amber_rounded, size: Medida.iconoAlerta, color: colores.error),
         title: Text(
           '¡Atención!',
-          style: TextStyle(
-            fontSize: 28,
+          style: textos.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: colores.onErrorContainer,
           ),
@@ -30,17 +31,18 @@ Future<void> mostrarAlerta(BuildContext context, Alerta alerta) {
         content: Text(
           alerta.mensaje,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, color: colores.onErrorContainer),
+          style: textos.headlineSmall?.copyWith(color: colores.onErrorContainer),
         ),
         actions: [
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: colores.error,
               foregroundColor: colores.onError,
-              minimumSize: const Size(double.infinity, 80),
+              minimumSize: const Size(double.infinity, Medida.botonGrande),
+              textStyle: textos.headlineSmall,
             ),
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Entendido', style: TextStyle(fontSize: 24)),
+            child: const Text('Entendido'),
           ),
         ],
       ),
@@ -54,18 +56,17 @@ Future<void> mostrarFinTemporizador(BuildContext context, String tituloPaso) {
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => AlertDialog(
-      icon: const Icon(Icons.alarm, size: 72),
-      title: const Text('¡Tiempo!', style: TextStyle(fontSize: 28)),
+      icon: const Icon(Icons.alarm, size: Medida.iconoAlerta),
+      title: const Text('¡Tiempo!'),
       content: Text(
         'Ha terminado el temporizador de "$tituloPaso".',
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 22),
       ),
       actions: [
         FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 72)),
+          style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, Medida.botonPrincipal)),
           onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('Entendido', style: TextStyle(fontSize: 22)),
+          child: const Text('Entendido'),
         ),
       ],
     ),
@@ -78,23 +79,20 @@ Future<bool> confirmarAvanceConTemporizador(BuildContext context) async {
   final respuesta = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      icon: const Icon(Icons.timer, size: 56),
+      icon: const Icon(Icons.timer, size: Medida.iconoAviso),
       title: const Text('El temporizador sigue en marcha'),
       content: const Text(
         '¿Quieres pasar al siguiente paso igualmente? '
         'El temporizador seguirá contando y te avisará al terminar.',
-        style: TextStyle(fontSize: 20),
       ),
       actions: [
         OutlinedButton(
-          style: OutlinedButton.styleFrom(minimumSize: const Size(140, 64)),
           onPressed: () => Navigator.pop(dialogContext, false),
-          child: const Text('Quedarme', style: TextStyle(fontSize: 20)),
+          child: const Text('Quedarme'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size(140, 64)),
           onPressed: () => Navigator.pop(dialogContext, true),
-          child: const Text('Avanzar igualmente', style: TextStyle(fontSize: 20)),
+          child: const Text('Avanzar igualmente'),
         ),
       ],
     ),
@@ -115,17 +113,16 @@ class RecordatorioAlerta extends StatelessWidget {
     return Card(
       color: colores.errorContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Espacio.normal),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.warning_amber_rounded, size: 32, color: colores.error),
-            const SizedBox(width: 12),
+            Icon(Icons.warning_amber_rounded, size: Medida.icono, color: colores.error),
+            const SizedBox(width: Espacio.medio),
             Expanded(
               child: Text(
                 alerta.mensaje,
-                style: TextStyle(
-                  fontSize: 20,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colores.onErrorContainer,
                 ),

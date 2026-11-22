@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:aeris/pantallas/cuaderno.dart';
 import 'package:aeris/pantallas/editor/pantalla_editor.dart';
 import 'package:aeris/pantallas/mis_protocolos.dart';
+import 'package:aeris/tema.dart';
 
 class PantallaInicio extends StatelessWidget {
   const PantallaInicio({super.key});
@@ -19,10 +20,10 @@ class PantallaInicio extends StatelessWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: Medida.anchoLectura),
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(Espacio.grande),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -31,7 +32,7 @@ class PantallaInicio extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: Espacio.extra),
                   BotonInicio(
                     icono: Icons.add,
                     texto: 'Añadir protocolo nuevo',
@@ -40,7 +41,7 @@ class PantallaInicio extends StatelessWidget {
                       MaterialPageRoute(builder: (context) => const PantallaEditor()),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Espacio.grande),
                   BotonInicio(
                     icono: Icons.folder_open,
                     texto: 'Mis protocolos',
@@ -51,7 +52,7 @@ class PantallaInicio extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Espacio.grande),
                   BotonInicio(
                     icono: Icons.menu_book,
                     texto: 'Cuaderno de laboratorio',
@@ -62,7 +63,7 @@ class PantallaInicio extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Espacio.grande),
                   BotonInicio(
                     icono: Icons.help_outline,
                     texto: 'Ayuda',
@@ -95,15 +96,20 @@ class BotonInicio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = Icon(icono, size: 36);
-    final label = Text(texto, style: const TextStyle(fontSize: 22));
+    // Más grandes que un botón normal: son la puerta de entrada a la app
+    final estilo = ButtonStyle(
+      textStyle: WidgetStatePropertyAll(Theme.of(context).textTheme.titleLarge),
+      iconSize: const WidgetStatePropertyAll(Medida.iconoGrande),
+    );
+    final icon = Icon(icono);
+    final label = Text(texto);
 
     return SizedBox(
       width: double.infinity,
-      height: 96,
+      height: Medida.botonGrande,
       child: secundario
-          ? OutlinedButton.icon(onPressed: onPressed, icon: icon, label: label)
-          : FilledButton.icon(onPressed: onPressed, icon: icon, label: label),
+          ? OutlinedButton.icon(style: estilo, onPressed: onPressed, icon: icon, label: label)
+          : FilledButton.icon(style: estilo, onPressed: onPressed, icon: icon, label: label),
     );
   }
 }

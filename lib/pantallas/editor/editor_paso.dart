@@ -9,8 +9,8 @@ import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/pantallas/editor/editor_calculo.dart';
+import 'package:aeris/tema.dart';
 
-const _estilo = TextStyle(fontSize: 20);
 
 /// Formulario de un paso. No sabe si está en la mitad derecha de una tablet
 /// o en una pantalla de móvil: eso lo decide quien lo contiene.
@@ -41,21 +41,19 @@ class _EditorInstrucciones extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CampoTitulo(titulo: paso.titulo, onCambio: (t) => onCambio(paso.copiar(titulo: t))),
-        const SizedBox(height: 16),
+        const SizedBox(height: Espacio.normal),
         TextFormField(
           initialValue: paso.texto,
           decoration: const InputDecoration(
             labelText: 'Texto del paso',
             hintText: 'Qué hay que hacer en este paso',
-            border: OutlineInputBorder(),
             alignLabelWithHint: true,
           ),
-          style: _estilo,
           minLines: 4,
           maxLines: null, // crece con el texto
           onChanged: (texto) => onCambio(paso.copiar(texto: texto)),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         SeccionHerramientas(
           temporizador: paso.temporizador,
           alerta: paso.alerta,
@@ -84,9 +82,7 @@ class CampoTitulo extends StatelessWidget {
       initialValue: titulo,
       decoration: const InputDecoration(
         labelText: 'Título del paso',
-        border: OutlineInputBorder(),
       ),
-      style: _estilo,
       onChanged: onCambio,
     );
   }
@@ -118,11 +114,11 @@ class SeccionHerramientas extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('Herramientas del paso', style: tema.textTheme.titleLarge),
-        const SizedBox(height: 8),
+        const SizedBox(height: Espacio.pequeno),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          secondary: const Icon(Icons.timer, size: 32),
-          title: const Text('Temporizador', style: _estilo),
+          secondary: const Icon(Icons.timer, size: Medida.icono),
+          title: const Text('Temporizador'),
           value: temporizador != null,
           onChanged: (activar) => onTemporizador(
             activar ? const Temporizador(Duration(minutes: 5)) : null,
@@ -133,11 +129,11 @@ class SeccionHerramientas extends StatelessWidget {
             duracion: temporizador.duracion,
             onCambio: (duracion) => onTemporizador(Temporizador(duracion)),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Espacio.pequeno),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          secondary: Icon(Icons.warning_amber_rounded, size: 32, color: tema.colorScheme.error),
-          title: const Text('Alerta', style: _estilo),
+          secondary: Icon(Icons.warning_amber_rounded, size: Medida.icono, color: tema.colorScheme.error),
+          title: const Text('Alerta'),
           subtitle: const Text('Ventana que no deja seguir sin pulsar "Entendido"'),
           value: alerta != null,
           onChanged: (activar) => onAlerta(activar ? const Alerta('') : null),
@@ -148,9 +144,7 @@ class SeccionHerramientas extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Mensaje de la alerta',
               hintText: 'Por ejemplo: mantén la enzima en hielo',
-              border: OutlineInputBorder(),
             ),
-            style: _estilo,
             maxLines: null,
             onChanged: (texto) => onAlerta(Alerta(texto)),
           ),
@@ -174,8 +168,7 @@ class _CamposDuracion extends StatelessWidget {
     Widget campo(String etiqueta, int valor, ValueChanged<int> alCambiar) {
       return TextFormField(
         initialValue: '$valor',
-        decoration: InputDecoration(labelText: etiqueta, border: const OutlineInputBorder()),
-        style: const TextStyle(fontSize: 22),
+        decoration: InputDecoration(labelText: etiqueta),
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         onChanged: (texto) => alCambiar(leerEntero(texto) ?? 0),
@@ -183,7 +176,8 @@ class _CamposDuracion extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 56, bottom: 8),
+      // Sangría para alinearse con el texto del interruptor, no con su icono
+      padding: const EdgeInsets.only(left: Medida.botonIcono, bottom: Espacio.pequeno),
       child: Row(
         children: [
           Expanded(
@@ -191,7 +185,7 @@ class _CamposDuracion extends StatelessWidget {
               onCambio(Duration(minutes: m, seconds: segundos));
             }),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: Espacio.normal),
           Expanded(
             child: campo('Segundos', segundos, (s) {
               onCambio(Duration(minutes: minutos, seconds: s));
@@ -227,9 +221,7 @@ class CampoNumero extends StatelessWidget {
       decoration: InputDecoration(
         labelText: etiqueta,
         helperText: ayuda,
-        border: const OutlineInputBorder(),
       ),
-      style: _estilo,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (texto) => leerNumero(texto) == null ? 'Escribe un número' : null,

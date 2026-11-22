@@ -8,6 +8,7 @@ import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/pantallas/cuaderno.dart';
 import 'package:aeris/servicios/almacen.dart';
+import 'package:aeris/tema.dart';
 
 /// Página del cuaderno de una ejecución terminada: solo lectura.
 class PantallaDetalleEjecucion extends StatelessWidget {
@@ -33,51 +34,49 @@ class PantallaDetalleEjecucion extends StatelessWidget {
     final valores = ejecucion.valoresIntroducidos.entries
         .where((valor) => valor.value.trim().isNotEmpty)
         .toList();
-    const texto = TextStyle(fontSize: 18);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(protocolo.nombreCompleto),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(Espacio.grande),
         children: [
-          Text('Inicio: ${formatearFechaHora(ejecucion.inicio)}', style: texto),
-          if (fin != null) Text('Fin: ${formatearFechaHora(fin)}', style: texto),
-          Text('Estado: ${ejecucion.estado.etiqueta}', style: texto),
+          Text('Inicio: ${formatearFechaHora(ejecucion.inicio)}'),
+          if (fin != null) Text('Fin: ${formatearFechaHora(fin)}'),
+          Text('Estado: ${ejecucion.estado.etiqueta}'),
 
           // ---------- Muestras: se recalcula lo que se pipeteó ----------
           if (paso != null && ejecucion.muestras.isNotEmpty) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: Espacio.grande),
             Text('Muestras', style: tema.textTheme.titleLarge),
-            const SizedBox(height: 8),
+            const SizedBox(height: Espacio.pequeno),
             for (final resultado in paso.calcular(ejecucion.muestras).muestras)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(_describirMuestra(resultado, paso), style: texto),
+                padding: const EdgeInsets.symmetric(vertical: Espacio.minimo),
+                child: Text(_describirMuestra(resultado, paso)),
               ),
           ],
 
           // ---------- Datos de la ejecución ----------
           if (valores.isNotEmpty) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: Espacio.grande),
             Text('Datos', style: tema.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            for (final valor in valores) Text('${valor.key}: ${valor.value}', style: texto),
+            const SizedBox(height: Espacio.pequeno),
+            for (final valor in valores) Text('${valor.key}: ${valor.value}'),
           ],
 
           // ---------- Pasos completados ----------
-          const SizedBox(height: 24),
+          const SizedBox(height: Espacio.grande),
           Text('Pasos completados', style: tema.textTheme.titleLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: Espacio.pequeno),
           for (final registro in ejecucion.registros)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: Espacio.minimo),
               child: Text(
                 '${formatearFechaHora(registro.completadoEn)} · '
                 '${registro.indicePaso < protocolo.numeroPasos ? protocolo.pasos[registro.indicePaso].titulo : 'Paso ${registro.indicePaso + 1}'}'
-                '${registro.nota != null ? '\n   Nota: ${registro.nota}' : ''}',
-                style: texto,
+                '${registro.nota != null ? '\n   Nota: ${registro.nota}' : ''}'
               ),
             ),
         ],

@@ -8,6 +8,7 @@ import 'package:aeris/modelos/protocolo.dart';
 import 'package:aeris/pantallas/editor/pantalla_editor.dart';
 import 'package:aeris/pantallas/ejecucion.dart';
 import 'package:aeris/servicios/almacen.dart';
+import 'package:aeris/tema.dart';
 
 class PantallaMisProtocolos extends StatefulWidget {
   const PantallaMisProtocolos({super.key});
@@ -52,34 +53,30 @@ class _PantallaMisProtocolosState extends State<PantallaMisProtocolos> {
           }
           if (protocolos.isEmpty) {
             return const Center(
-              child: Text('Todavía no hay protocolos.', style: TextStyle(fontSize: 20)),
+              child: Text('Todavía no hay protocolos.'),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(Espacio.normal),
             itemCount: protocolos.length,
             itemBuilder: (context, indice) {
               final protocolo = protocolos[indice];
               return Card(
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  leading: const Icon(Icons.science, size: 36),
-                  title: Text(
-                    protocolo.nombreCompleto,
-                    style: const TextStyle(fontSize: 20),
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: Espacio.grande, vertical: Espacio.medio),
+                  leading: const Icon(Icons.science, size: Medida.iconoGrande),
+                  title: Text(protocolo.nombreCompleto),
                   subtitle: Text('${protocolo.numeroPasos} pasos'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        iconSize: 32,
                         tooltip: 'Editar',
                         onPressed: () => _editar(protocolo),
                         icon: const Icon(Icons.edit),
                       ),
-                      const Icon(Icons.play_arrow, size: 36),
+                      const Icon(Icons.play_arrow, size: Medida.iconoGrande),
                     ],
                   ),
                   onTap: () => Navigator.push(

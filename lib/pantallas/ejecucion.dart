@@ -19,6 +19,7 @@ import 'package:aeris/pantallas/widgets/vista_calculo.dart';
 import 'package:aeris/pantallas/widgets/vista_temporizador.dart';
 import 'package:aeris/servicios/almacen.dart';
 import 'package:aeris/servicios/avisos.dart';
+import 'package:aeris/tema.dart';
 
 class PantallaEjecucion extends StatefulWidget {
   final Protocolo protocolo;
@@ -306,15 +307,14 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
         title: const Text('¡Protocolo completado!'),
         content: Text(
           'Has terminado "${widget.protocolo.nombreCompleto}".',
-          style: const TextStyle(fontSize: 18),
         ),
         actions: [
           FilledButton(
             style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 72),
+              minimumSize: const Size(double.infinity, Medida.botonPrincipal),
             ),
             onPressed: () => Navigator.pop(dialogContext), // 1er pop: cierra el diálogo
-            child: const Text('Volver', style: TextStyle(fontSize: 22)),
+            child: const Text('Volver'),
           ),
         ],
       ),
@@ -343,7 +343,7 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(Espacio.grande),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -351,17 +351,17 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                 'Paso ${pasoActual + 1} de $total',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Espacio.pequeno),
               LinearProgressIndicator(
                 value: (pasoActual + 1) / total,
                 minHeight: 12,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: Espacio.extra),
               Text(
                 paso.titulo,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Espacio.normal),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -369,12 +369,12 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                     children: [
                       if (alerta != null) ...[
                         RecordatorioAlerta(alerta: alerta),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: Espacio.normal),
                       ],
                       switch (paso) {
                         PasoInstrucciones p => Text(
                             p.texto,
-                            style: const TextStyle(fontSize: 26, height: 1.4),
+                            style: EstiloTexto.paso,
                           ),
                         PasoCalculo p => VistaCalculo(
                             paso: p,
@@ -387,7 +387,7 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                           ),
                       },
                       if (cuenta != null) ...[
-                        const SizedBox(height: 24),
+                        const SizedBox(height: Espacio.grande),
                         VistaTemporizador(
                           cuenta: cuenta,
                           onIniciar: () => iniciarTemporizador(pasoActual),
@@ -399,32 +399,29 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: Espacio.grande),
               Row(
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 96,
+                      height: Medida.botonGrande,
                       child: OutlinedButton.icon(
                         onPressed: esPrimero ? null : anterior,
-                        icon: const Icon(Icons.arrow_back, size: 32),
-                        label: const Text('Anterior', style: TextStyle(fontSize: 22)),
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('Anterior'),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: Espacio.normal),
                   Expanded(
                     child: SizedBox(
-                      height: 96,
+                      height: Medida.botonGrande,
                       child: FilledButton.icon(
                         onPressed: !puedeAvanzar
                             ? null
                             : (esUltimo ? terminar : siguiente),
-                        icon: Icon(esUltimo ? Icons.check : Icons.arrow_forward, size: 32),
-                        label: Text(
-                          esUltimo ? 'Terminar' : 'Siguiente',
-                          style: const TextStyle(fontSize: 22),
-                        ),
+                        icon: Icon(esUltimo ? Icons.check : Icons.arrow_forward),
+                        label: Text(esUltimo ? 'Terminar' : 'Siguiente'),
                       ),
                     ),
                   ),

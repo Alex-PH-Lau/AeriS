@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:aeris/modelos/cuenta_atras.dart';
+import 'package:aeris/tema.dart';
 
 /// Temporizador de un paso: cuenta atrás grande y botones.
 /// No guarda nada: la cuenta atrás vive en la pantalla de ejecución.
@@ -31,65 +32,58 @@ class VistaTemporizador extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(Espacio.grande),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.timer, size: 28),
-                const SizedBox(width: 8),
+                const Icon(Icons.timer, size: Medida.icono),
+                const SizedBox(width: Espacio.pequeno),
                 Text(
                   'Temporizador · ${formatearTiempo(cuenta.duracion.inSeconds)}',
                   style: tema.textTheme.titleMedium,
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Espacio.pequeno),
             Text(
               terminado ? '¡Tiempo!' : formatearTiempo(cuenta.segundosMostrados),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 72,
-                fontWeight: FontWeight.bold,
-                // Cifras del mismo ancho: el número no "baila" al cambiar
-                fontFeatures: const [FontFeature.tabularFigures()],
+              style: EstiloTexto.reloj.copyWith(
                 color: terminado ? tema.colorScheme.error : null,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Espacio.pequeno),
             LinearProgressIndicator(value: progreso, minHeight: 8),
-            const SizedBox(height: 16),
+            const SizedBox(height: Espacio.normal),
             Row(
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 64,
+                    height: Medida.boton,
                     child: cuenta.enMarcha && !terminado
                         ? FilledButton.icon(
                             onPressed: onPausar,
-                            icon: const Icon(Icons.pause, size: 28),
-                            label: const Text('Pausar', style: TextStyle(fontSize: 20)),
+                            icon: const Icon(Icons.pause),
+                            label: const Text('Pausar'),
                           )
                         : FilledButton.icon(
                             onPressed: terminado ? null : onIniciar,
-                            icon: const Icon(Icons.play_arrow, size: 28),
-                            label: Text(
-                              cuenta.sinEmpezar ? 'Iniciar' : 'Reanudar',
-                              style: const TextStyle(fontSize: 20),
-                            ),
+                            icon: const Icon(Icons.play_arrow),
+                            label: Text(cuenta.sinEmpezar ? 'Iniciar' : 'Reanudar'),
                           ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: Espacio.normal),
                 Expanded(
                   child: SizedBox(
-                    height: 64,
+                    height: Medida.boton,
                     child: OutlinedButton.icon(
                       onPressed: cuenta.sinEmpezar ? null : onReiniciar,
-                      icon: const Icon(Icons.replay, size: 28),
-                      label: const Text('Reiniciar', style: TextStyle(fontSize: 20)),
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Reiniciar'),
                     ),
                   ),
                 ),

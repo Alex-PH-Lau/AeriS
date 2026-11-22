@@ -9,8 +9,8 @@ import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/pantallas/editor/editor_paso.dart';
+import 'package:aeris/tema.dart';
 
-const _estilo = TextStyle(fontSize: 20);
 
 /// Una fila editable (reactivo, tipo de tubo o dato) con una clave estable,
 /// para que al borrar una fila del medio los textos no salten a otra.
@@ -73,9 +73,9 @@ class _EditorCalculoState extends State<EditorCalculo> {
         CampoTitulo(titulo: paso.titulo, onCambio: (t) => _emitir(paso.copiar(titulo: t))),
 
         // ---------- Reacción ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         Text('Reacción', style: tema.textTheme.titleLarge),
-        const SizedBox(height: 12),
+        const SizedBox(height: Espacio.medio),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -87,7 +87,7 @@ class _EditorCalculoState extends State<EditorCalculo> {
                 onCambio: (v) => _emitir(paso.copiar(volumenReaccion: v)),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: Espacio.normal),
             Expanded(
               child: CampoNumero(
                 key: const ValueKey('margen'),
@@ -102,28 +102,28 @@ class _EditorCalculoState extends State<EditorCalculo> {
         ),
 
         // ---------- Molde (DNA) ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         Text('DNA molde', style: tema.textTheme.titleLarge),
-        const SizedBox(height: 12),
+        const SizedBox(height: Espacio.medio),
         SegmentedButton<ModoMolde>(
           segments: const [
             ButtonSegment(
               value: ModoMolde.normalizado,
               icon: Icon(Icons.balance),
-              label: Text('Normalizar ng', style: TextStyle(fontSize: 18)),
+              label: Text('Normalizar ng'),
             ),
             ButtonSegment(
               value: ModoMolde.volumenFijo,
               icon: Icon(Icons.straighten),
-              label: Text('Volumen fijo', style: TextStyle(fontSize: 18)),
+              label: Text('Volumen fijo'),
             ),
           ],
           selected: {paso.modo},
           onSelectionChanged: (seleccion) => _emitir(paso.copiar(modo: seleccion.first)),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Espacio.pequeno),
         Text(paso.modo.etiqueta, style: tema.textTheme.bodyMedium),
-        const SizedBox(height: 16),
+        const SizedBox(height: Espacio.normal),
         CampoNumero(
           key: const ValueKey('volumenMolde'),
           etiqueta: normalizado ? 'Hueco para DNA + agua (µL)' : 'DNA por tubo (µL)',
@@ -132,7 +132,7 @@ class _EditorCalculoState extends State<EditorCalculo> {
           onCambio: (v) => _emitir(paso.copiar(volumenMolde: v)),
         ),
         if (normalizado) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: Espacio.normal),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -144,7 +144,7 @@ class _EditorCalculoState extends State<EditorCalculo> {
                   onCambio: (v) => _emitir(paso.copiar(ngObjetivo: v)),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: Espacio.normal),
               Expanded(
                 child: CampoNumero(
                   key: const ValueKey('volumenMinimo'),
@@ -158,10 +158,10 @@ class _EditorCalculoState extends State<EditorCalculo> {
         ],
 
         // ---------- Reactivos ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         Text('Reactivos del mastermix', style: tema.textTheme.titleLarge),
         Text('Sin el agua: AeriS la calcula sola.', style: tema.textTheme.bodyMedium),
-        const SizedBox(height: 12),
+        const SizedBox(height: Espacio.medio),
         for (var i = 0; i < reactivos.length; i++)
           _FilaReactivo(
             key: ValueKey(reactivos[i].clave),
@@ -177,13 +177,13 @@ class _EditorCalculoState extends State<EditorCalculo> {
         ),
 
         // ---------- Tipos de tubo ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         Text('Tipos de tubo', style: tema.textTheme.titleLarge),
         Text(
           'Con DNA y sin cantidad fija = las muestras, que se añaden al ejecutar.',
           style: tema.textTheme.bodyMedium,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Espacio.medio),
         for (var i = 0; i < tubos.length; i++)
           _FilaTubo(
             key: ValueKey(tubos[i].clave),
@@ -199,10 +199,10 @@ class _EditorCalculoState extends State<EditorCalculo> {
         ),
 
         // ---------- Datos de la ejecución ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         Text('Datos que se apuntan al ejecutar', style: tema.textTheme.titleLarge),
         Text('Por ejemplo, el lote de la polimerasa.', style: tema.textTheme.bodyMedium),
-        const SizedBox(height: 12),
+        const SizedBox(height: Espacio.medio),
         for (var i = 0; i < parametros.length; i++)
           _FilaParametro(
             key: ValueKey(parametros[i].clave),
@@ -218,11 +218,11 @@ class _EditorCalculoState extends State<EditorCalculo> {
         ),
 
         // ---------- Vista previa ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         _VistaPrevia(paso: paso),
 
         // ---------- Herramientas ----------
-        const SizedBox(height: 32),
+        const SizedBox(height: Espacio.extra),
         SeccionHerramientas(
           temporizador: paso.temporizador,
           alerta: paso.alerta,
@@ -251,11 +251,11 @@ class _BotonAnadir extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: SizedBox(
-        height: 56,
+        height: Medida.boton,
         child: OutlinedButton.icon(
           onPressed: onPressed,
-          icon: const Icon(Icons.add, size: 28),
-          label: Text(texto, style: const TextStyle(fontSize: 18)),
+          icon: const Icon(Icons.add),
+          label: Text(texto),
         ),
       ),
     );
@@ -263,7 +263,6 @@ class _BotonAnadir extends StatelessWidget {
 }
 
 Widget _botonQuitar(String tooltip, VoidCallback onQuitar) => IconButton(
-      iconSize: 28,
       tooltip: tooltip,
       onPressed: onQuitar,
       icon: const Icon(Icons.delete_outline),
@@ -271,7 +270,6 @@ Widget _botonQuitar(String tooltip, VoidCallback onQuitar) => IconButton(
 
 InputDecoration _decoracion(String etiqueta) => InputDecoration(
       labelText: etiqueta,
-      border: const OutlineInputBorder(),
       isDense: true,
     );
 
@@ -297,7 +295,7 @@ class _FilaReactivo extends StatelessWidget {
         );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Espacio.medio),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -306,17 +304,15 @@ class _FilaReactivo extends StatelessWidget {
             child: TextFormField(
               initialValue: reactivo.nombre,
               decoration: _decoracion('Reactivo'),
-              style: _estilo,
               onChanged: (t) => onCambio(con(nombre: t)),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Espacio.pequeno),
           Expanded(
             flex: 2,
             child: TextFormField(
               initialValue: reactivo.concentracion ?? '',
               decoration: _decoracion('Conc. (opcional)'),
-              style: _estilo,
               onChanged: (t) => onCambio(Reactivo(
                 nombre: reactivo.nombre,
                 volPorReaccion: reactivo.volPorReaccion,
@@ -324,7 +320,7 @@ class _FilaReactivo extends StatelessWidget {
               )),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Espacio.pequeno),
           Expanded(
             flex: 2,
             child: CampoNumero(
@@ -365,9 +361,9 @@ class _FilaTubo extends StatelessWidget {
     final cantidad = tipo.cantidadFija;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: Espacio.medio),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(Espacio.medio),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -377,7 +373,6 @@ class _FilaTubo extends StatelessWidget {
                   child: TextFormField(
                     initialValue: tipo.nombre,
                     decoration: _decoracion('Nombre del tubo'),
-                    style: _estilo,
                     onChanged: (t) => onCambio(nuevo(nombre: t)),
                   ),
                 ),
@@ -386,7 +381,7 @@ class _FilaTubo extends StatelessWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Lleva DNA', style: _estilo),
+              title: const Text('Lleva DNA'),
               subtitle: Text(tipo.conDna
                   ? 'Aparece en la tabla de muestras con su concentración'
                   : 'Lleva otra cosa en el hueco, por ejemplo agua'),
@@ -402,7 +397,6 @@ class _FilaTubo extends StatelessWidget {
                     decoration: _decoracion(tipo.conDna ? 'Cantidad fija' : 'Cantidad').copyWith(
                       helperText: tipo.conDna ? 'Vacío = se añaden al ejecutar' : null,
                     ),
-                    style: _estilo,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (t) {
@@ -412,12 +406,11 @@ class _FilaTubo extends StatelessWidget {
                   ),
                 ),
                 if (!tipo.conDna) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Espacio.medio),
                   Expanded(
                     child: TextFormField(
                       initialValue: tipo.seAnade,
                       decoration: _decoracion('Se añade'),
-                      style: _estilo,
                       onChanged: (t) => onCambio(nuevo(seAnade: t)),
                     ),
                   ),
@@ -461,9 +454,9 @@ class _FilaParametro extends StatelessWidget {
     final esNumero = parametro.tipo == TipoParametro.numero;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: Espacio.medio),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(Espacio.medio),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -475,18 +468,16 @@ class _FilaParametro extends StatelessWidget {
                   child: TextFormField(
                     initialValue: parametro.nombre,
                     decoration: _decoracion('Nombre del dato'),
-                    style: _estilo,
                     onChanged: (t) => onCambio(nuevo(nombre: t)),
                   ),
                 ),
                 if (esNumero) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Espacio.pequeno),
                   Expanded(
                     flex: 2,
                     child: TextFormField(
                       initialValue: parametro.unidad ?? '',
                       decoration: _decoracion('Unidad'),
-                      style: _estilo,
                       onChanged: (t) => onCambio(
                         t.trim().isEmpty ? nuevo(quitarUnidad: true) : nuevo(unidad: t),
                       ),
@@ -496,7 +487,7 @@ class _FilaParametro extends StatelessWidget {
                 _botonQuitar('Quitar dato', onQuitar),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Espacio.pequeno),
             Wrap(
               spacing: 16,
               runSpacing: 8,
@@ -517,8 +508,8 @@ class _FilaParametro extends StatelessWidget {
                       value: parametro.obligatorio,
                       onChanged: (o) => onCambio(nuevo(obligatorio: o)),
                     ),
-                    const SizedBox(width: 8),
-                    const Text('Obligatorio', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: Espacio.pequeno),
+                    const Text('Obligatorio'),
                   ],
                 ),
               ],
@@ -562,26 +553,26 @@ class _VistaPrevia extends StatelessWidget {
     return Card(
       color: tema.colorScheme.surfaceContainerHighest,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Espacio.normal),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.preview, size: 28),
-                const SizedBox(width: 8),
+                const Icon(Icons.preview, size: Medida.icono),
+                const SizedBox(width: Espacio.pequeno),
                 Text('Vista previa', style: tema.textTheme.titleLarge),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Espacio.pequeno),
             if (problemas.isNotEmpty) ...[
               Text('Para calcular, falta:', style: tema.textTheme.titleMedium),
               for (final problema in problemas)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.only(top: Espacio.minimo),
                   child: Text(
                     '• $problema',
-                    style: TextStyle(fontSize: 17, color: tema.colorScheme.error),
+                    style: TextStyle(color: tema.colorScheme.error), // tamaño: el del texto normal
                   ),
                 ),
             ] else
@@ -595,7 +586,6 @@ class _VistaPrevia extends StatelessWidget {
   List<Widget> _calculo(ThemeData tema, List<Muestra> muestras) {
     final resultado = paso.calcular(muestras);
     final mixPorTubo = paso.volumenReaccion - paso.volumenMolde;
-    const texto = TextStyle(fontSize: 17);
 
     String lineaMuestra(ResultadoMuestra r) {
       final dna = r.volumenDna.toStringAsFixed(2);
@@ -614,25 +604,22 @@ class _VistaPrevia extends StatelessWidget {
       Text(
         'Ejemplo: $_muestrasEjemplo muestras a ${formatearNumero(_concentracionEjemplo)} ng/µL '
         '→ ${resultado.totalTubos} tubos en total.',
-        style: texto,
       ),
-      const SizedBox(height: 8),
+      const SizedBox(height: Espacio.pequeno),
       Text('Mastermix: ${formatearMicrolitros(mixPorTubo)} µL por tubo', style: tema.textTheme.titleMedium),
       for (final reactivo in paso.reactivos)
         Text(
           '• ${reactivo.nombre}: ${formatearMicrolitros(reactivo.volPorReaccion)} µL/tubo → '
           '${(resultado.volumenesTotales[reactivo.nombre] ?? 0).toStringAsFixed(2)} µL',
-          style: texto,
         ),
       Text(
         '• Agua: ${resultado.aguaPorTubo.toStringAsFixed(2)} µL/tubo → '
         '${(resultado.volumenesTotales['Agua'] ?? 0).toStringAsFixed(2)} µL',
-        style: texto,
       ),
       Text('Total: ${resultado.volumenTotal.toStringAsFixed(2)} µL', style: tema.textTheme.titleMedium),
       if (resultado.muestras.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        Text('Cada tubo con DNA: ${lineaMuestra(resultado.muestras.first)}', style: texto),
+        const SizedBox(height: Espacio.pequeno),
+        Text('Cada tubo con DNA: ${lineaMuestra(resultado.muestras.first)}'),
       ],
     ];
   }
