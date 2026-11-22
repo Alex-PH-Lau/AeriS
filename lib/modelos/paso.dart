@@ -84,6 +84,24 @@ class PasoInstrucciones extends Paso {
         'texto': texto,
       };
 
+  /// Copia con cambios. Como `null` ya significa "no cambiar", para QUITAR
+  /// el temporizador o la alerta hacen falta los parámetros sinTemporizador y sinAlerta.
+  PasoInstrucciones copiar({
+    String? titulo,
+    String? texto,
+    Temporizador? temporizador,
+    Alerta? alerta,
+    bool sinTemporizador = false,
+    bool sinAlerta = false,
+  }) {
+    return PasoInstrucciones(
+      titulo: titulo ?? this.titulo,
+      texto: texto ?? this.texto,
+      temporizador: sinTemporizador ? null : (temporizador ?? this.temporizador),
+      alerta: sinAlerta ? null : (alerta ?? this.alerta),
+    );
+  }
+
   factory PasoInstrucciones.fromJson(Map<String, dynamic> json) => PasoInstrucciones(
         titulo: json['titulo'] as String,
         texto: json['texto'] as String,

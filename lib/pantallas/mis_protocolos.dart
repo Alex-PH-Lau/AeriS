@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:aeris/modelos/protocolo.dart';
+import 'package:aeris/pantallas/editor/pantalla_editor.dart';
 import 'package:aeris/pantallas/ejecucion.dart';
 import 'package:aeris/servicios/almacen.dart';
 
@@ -16,8 +17,18 @@ class PantallaMisProtocolos extends StatefulWidget {
 }
 
 class _PantallaMisProtocolosState extends State<PantallaMisProtocolos> {
-  // La consulta se lanza una vez, al abrir la pantalla, y no en cada build
-  late final Future<List<Protocolo>> _protocolos = almacen.ultimasVersiones();
+  // La consulta se lanza al abrir la pantalla (y al volver del editor), no en cada build
+  late Future<List<Protocolo>> _protocolos = almacen.ultimasVersiones();
+
+  Future<void> _editar(Protocolo protocolo) async {
+    final guardado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => PantallaEditor(original: protocolo)),
+    );
+    if (guardado == true && mounted) {
+      setState(() => _protocolos = almacen.ultimasVersiones()); // ver la versión nueva
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +66,18 @@ class _PantallaMisProtocolosState extends State<PantallaMisProtocolos> {
                     style: const TextStyle(fontSize: 20),
                   ),
                   subtitle: Text('${protocolo.numeroPasos} pasos'),
-                  trailing: const Icon(Icons.play_arrow, size: 36),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        iconSize: 32,
+                        tooltip: 'Editar',
+                        onPressed: () => _editar(protocolo),
+                        icon: const Icon(Icons.edit),
+                      ),
+                      const Icon(Icons.play_arrow, size: 36),
+                    ],
+                  ),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(

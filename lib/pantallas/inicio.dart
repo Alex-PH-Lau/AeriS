@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:aeris/pantallas/cuaderno.dart';
+import 'package:aeris/pantallas/editor/pantalla_editor.dart';
 import 'package:aeris/pantallas/mis_protocolos.dart';
 
 class PantallaInicio extends StatelessWidget {
@@ -34,7 +35,10 @@ class PantallaInicio extends StatelessWidget {
                   BotonInicio(
                     icono: Icons.add,
                     texto: 'Añadir protocolo nuevo',
-                    onPressed: () => mostrarProximamente(context, 'Añadir protocolo'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PantallaEditor()),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   BotonInicio(

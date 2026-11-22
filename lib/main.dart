@@ -26,7 +26,7 @@ class AerisApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 46, 0, 195),
+          seedColor: const Color.fromARGB(255, 95, 0, 0),
         ),
       ),
       home: const PantallaInicio(),
