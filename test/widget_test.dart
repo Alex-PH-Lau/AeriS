@@ -1,3 +1,8 @@
+// AeriS - Laboratory protocol assistant
+// Copyright (C) 2026 Alejandro Pascual Hernández and contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Additional permission for app stores: see EXCEPCION_TIENDAS.md
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aeris/main.dart';
 
@@ -28,6 +33,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Paso 1 de 5'), findsOneWidget);
+    expect(find.text('Preparar los reactivos'), findsOneWidget);
   });
 
   testWidgets('Recorrer la PCR hasta el final muestra el diálogo y vuelve a la lista', (tester) async {

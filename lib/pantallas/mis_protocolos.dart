@@ -4,7 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
-import 'package:aeris/modelos/protocolo.dart';
+import 'package:aeris/modelos/ejemplos.dart';
 import 'package:aeris/pantallas/ejecucion.dart';
 
 class PantallaMisProtocolos extends StatelessWidget {

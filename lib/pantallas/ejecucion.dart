@@ -4,6 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
+import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
 
 class PantallaEjecucion extends StatefulWidget {
@@ -65,6 +66,7 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   Widget build(BuildContext context) {
     final protocolo = widget.protocolo;
     final total = protocolo.numeroPasos;
+    final paso = protocolo.pasos[pasoActual];
     final esPrimero = pasoActual == 0;
     final esUltimo = pasoActual == total - 1;
 
@@ -88,12 +90,24 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                 minHeight: 12,
               ),
               const SizedBox(height: 32),
+              Text(
+                paso.titulo,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
-                  child: Text(
-                    protocolo.pasos[pasoActual],
-                    style: const TextStyle(fontSize: 26, height: 1.4),
-                  ),
+                  child: switch (paso) {
+                    PasoInstrucciones p => Text(
+                        p.texto,
+                        style: const TextStyle(fontSize: 26, height: 1.4),
+                      ),
+                    PasoCalculo p => Text(
+                        'Cálculo de reactivos con ${p.reactivos.length} reactivos.\n'
+                        'La pantalla de cálculo llegará en la próxima lección.',
+                        style: const TextStyle(fontSize: 22, height: 1.4),
+                      ),
+                  },
                 ),
               ),
               const SizedBox(height: 24),
