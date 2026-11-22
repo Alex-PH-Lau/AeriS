@@ -4,8 +4,10 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
+import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
+import 'package:aeris/pantallas/widgets/vista_calculo.dart';
 
 class PantallaEjecucion extends StatefulWidget {
   final Protocolo protocolo;
@@ -19,9 +21,29 @@ class PantallaEjecucion extends StatefulWidget {
 class _PantallaEjecucionState extends State<PantallaEjecucion> {
   int pasoActual = 0;
 
+  // Valores introducidos durante esta ejecución: 'Muestra' → '12'.
+  // Viven aquí, y no en cada paso, para no perderlos al ir atrás y adelante.
+  final Map<String, String> valores = {};
+
+  void actualizarValor(String clave, String valor) {
+    setState(() {
+      valores[clave] = valor;
+    });
+  }
+
+  /// ¿Se puede salir del paso actual? Los de cálculo necesitan datos válidos.
+  bool get pasoActualCompleto {
+    final paso = widget.protocolo.pasos[pasoActual];
+    return switch (paso) {
+      PasoInstrucciones() => true,
+      PasoCalculo p => calculoCompleto(p, valores),
+    };
+  }
+
   void siguiente() {
-    // Seguro: no pasar del último paso
+    // Seguros: no pasar del último paso ni avanzar con datos incompletos
     if (pasoActual >= widget.protocolo.numeroPasos - 1) return;
+    if (!pasoActualCompleto) return;
     setState(() {
       pasoActual++;
     });
@@ -69,6 +91,7 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     final paso = protocolo.pasos[pasoActual];
     final esPrimero = pasoActual == 0;
     final esUltimo = pasoActual == total - 1;
+    final puedeAvanzar = pasoActualCompleto;
 
     return Scaffold(
       appBar: AppBar(
@@ -102,10 +125,10 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                         p.texto,
                         style: const TextStyle(fontSize: 26, height: 1.4),
                       ),
-                    PasoCalculo p => Text(
-                        'Cálculo de reactivos con ${p.reactivos.length} reactivos.\n'
-                        'La pantalla de cálculo llegará en la próxima lección.',
-                        style: const TextStyle(fontSize: 22, height: 1.4),
+                    PasoCalculo p => VistaCalculo(
+                        paso: p,
+                        valores: valores,
+                        onCambio: actualizarValor,
                       ),
                   },
                 ),
@@ -128,7 +151,9 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                     child: SizedBox(
                       height: 96,
                       child: FilledButton.icon(
-                        onPressed: esUltimo ? terminar : siguiente,
+                        onPressed: !puedeAvanzar
+                            ? null
+                            : (esUltimo ? terminar : siguiente),
                         icon: Icon(esUltimo ? Icons.check : Icons.arrow_forward, size: 32),
                         label: Text(
                           esUltimo ? 'Terminar' : 'Siguiente',

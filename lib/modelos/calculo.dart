@@ -72,4 +72,13 @@ class ResultadoMastermix {
   });
 
   bool get esValido => aguaPorTubo >= 0;
+
+  /// µL totales de mastermix que hay que preparar (suma de todo, agua incluida).
+  double get volumenTotal {
+    double suma = 0;
+    for (final volumen in volumenesTotales.values) {
+      suma += volumen;
+    }
+    return suma;
+  }
 }
