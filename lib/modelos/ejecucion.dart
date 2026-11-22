@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
+import 'package:aeris/modelos/calculo.dart';
+
 enum EstadoEjecucion {
   enProceso('En proceso'),
   completada('Completada');
@@ -29,7 +31,8 @@ class Ejecucion {
   final DateTime inicio;
   final DateTime? fin; // null mientras está en proceso
   final EstadoEjecucion estado;
-  final Map<String, String> valoresIntroducidos; // 'Muestra' → '12', 'Lote de la Taq' → 'A123'
+  final Map<String, String> valoresIntroducidos; // 'Lote de la Taq' → 'A123'
+  final List<Muestra> muestras; // código y concentración de cada muestra
   final List<RegistroPaso> registros;
 
   const Ejecucion({
@@ -39,6 +42,7 @@ class Ejecucion {
     this.fin,
     this.estado = EstadoEjecucion.enProceso,
     this.valoresIntroducidos = const {},
+    this.muestras = const [],
     this.registros = const [],
   });
 
@@ -51,6 +55,7 @@ class Ejecucion {
       fin: fin,
       estado: estado,
       valoresIntroducidos: valoresIntroducidos,
+      muestras: muestras,
       registros: [
         ...registros,
         RegistroPaso(
@@ -62,7 +67,7 @@ class Ejecucion {
     );
   }
 
-  /// Devuelve una ejecución nueva marcada como completada (ejercicio 2).
+  /// Devuelve una ejecución nueva marcada como completada.
   Ejecucion terminar() {
     return Ejecucion(
       protocoloId: protocoloId,
@@ -71,6 +76,7 @@ class Ejecucion {
       fin: DateTime.now(),
       estado: EstadoEjecucion.completada,
       valoresIntroducidos: valoresIntroducidos,
+      muestras: muestras,
       registros: registros,
     );
   }

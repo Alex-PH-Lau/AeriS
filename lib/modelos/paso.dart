@@ -36,17 +36,28 @@ class PasoInstrucciones extends Paso {
 
 class PasoCalculo extends Paso {
   final double volumenReaccion; // µL por tubo
-  final double volumenMolde; // µL que se añaden aparte en cada tubo
+  final double volumenMolde; // hueco para DNA + agua en cada tubo (µL)
   final double margen; // 1.1 = +10 %
+  final ModoMolde modo;
+  final double? ngObjetivo; // ng de DNA por reacción (modo normalizado)
+  final double volumenMinimo; // µL mínimos que se pueden pipetear con precisión
   final List<Reactivo> reactivos;
   final List<TipoTubo> tiposTubo;
-  final List<ParametroEntrada> parametros; // datos extra que se apuntan al ejecutar
+  final List<ParametroEntrada> parametros; // datos de la ejecución: lotes, equipo…
+
+  static const factoresDilucion = [2, 5, 10, 20, 50, 100];
+
+  // Margen para comparar decimales sin que un 0.9999999 cuente como menor que 1
+  static const _tolerancia = 1e-9;
 
   const PasoCalculo({
     required super.titulo,
     required this.volumenReaccion,
     required this.volumenMolde,
     this.margen = 1.1,
+    this.modo = ModoMolde.normalizado,
+    this.ngObjetivo,
+    this.volumenMinimo = 1.0,
     required this.reactivos,
     required this.tiposTubo,
     this.parametros = const [],
@@ -62,13 +73,19 @@ class PasoCalculo extends Paso {
     return suma;
   }
 
-  List<TipoTubo> get tubosQueSePreguntan =>
-      tiposTubo.where((tipo) => tipo.sePregunta).toList();
-
-  ResultadoMastermix calcular(Map<String, int> cantidadesIntroducidas) {
-    int totalTubos = 0;
+  /// Busca un tipo de tubo por su nombre. Devuelve null si no existe.
+  TipoTubo? tipoTubo(String nombre) {
     for (final tipo in tiposTubo) {
-      totalTubos += tipo.cantidadFija ?? cantidadesIntroducidas[tipo.nombre] ?? 0;
+      if (tipo.nombre == nombre) return tipo;
+    }
+    return null;
+  }
+
+  ResultadoMastermix calcular(List<Muestra> muestras) {
+    // Tubos con DNA: uno por fila de la tabla. Tubos sin DNA: su cantidad fija.
+    int totalTubos = muestras.length;
+    for (final tipo in tiposTubo) {
+      if (!tipo.conDna) totalTubos += tipo.cantidadFija ?? 0;
     }
 
     final factor = totalTubos * margen;
@@ -80,11 +97,84 @@ class PasoCalculo extends Paso {
     }
     volumenes['Agua'] = aguaPorTubo * factor;
 
+    final resultados = <ResultadoMuestra>[];
+    for (final muestra in muestras) {
+      resultados.add(calcularMuestra(muestra));
+    }
+
     return ResultadoMastermix(
       totalTubos: totalTubos,
       factor: factor,
       aguaPorTubo: aguaPorTubo,
       volumenesTotales: volumenes,
+      muestras: resultados,
+    );
+  }
+
+  ResultadoMuestra calcularMuestra(Muestra muestra) {
+    // Mismo volumen en todos: el hueco entero es DNA
+    if (modo == ModoMolde.volumenFijo) {
+      return ResultadoMuestra(
+        muestra: muestra,
+        estado: EstadoMuestra.correcta,
+        volumenDna: volumenMolde,
+        volumenAgua: 0,
+      );
+    }
+
+    final concentracion = muestra.concentracion;
+    final objetivo = ngObjetivo;
+    if (concentracion == null || concentracion <= 0 || objetivo == null) {
+      return ResultadoMuestra(
+        muestra: muestra,
+        estado: EstadoMuestra.sinConcentracion,
+        volumenDna: 0,
+        volumenAgua: 0,
+      );
+    }
+
+    final volumen = objetivo / concentracion;
+
+    // Poco concentrada: no cabe en el hueco → se usa el hueco entero (opción B)
+    if (volumen > volumenMolde + _tolerancia) {
+      return ResultadoMuestra(
+        muestra: muestra,
+        estado: EstadoMuestra.huecoCompleto,
+        volumenDna: volumenMolde,
+        volumenAgua: 0,
+        ngReales: volumenMolde * concentracion,
+      );
+    }
+
+    // Muy concentrada: menos del mínimo pipeteable → buscar una dilución
+    if (volumen < volumenMinimo - _tolerancia) {
+      for (final factorDilucion in factoresDilucion) {
+        final volumenDiluido = volumen * factorDilucion;
+        if (volumenDiluido >= volumenMinimo - _tolerancia &&
+            volumenDiluido <= volumenMolde + _tolerancia) {
+          return ResultadoMuestra(
+            muestra: muestra,
+            estado: EstadoMuestra.diluir,
+            volumenDna: volumenDiluido,
+            volumenAgua: volumenMolde - volumenDiluido,
+            factorDilucion: factorDilucion,
+          );
+        }
+      }
+      // Ni con 1:100 basta
+      return ResultadoMuestra(
+        muestra: muestra,
+        estado: EstadoMuestra.diluir,
+        volumenDna: 0,
+        volumenAgua: 0,
+      );
+    }
+
+    return ResultadoMuestra(
+      muestra: muestra,
+      estado: EstadoMuestra.correcta,
+      volumenDna: volumen,
+      volumenAgua: volumenMolde - volumen,
     );
   }
 }

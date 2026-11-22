@@ -4,6 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
+import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
@@ -21,13 +22,46 @@ class PantallaEjecucion extends StatefulWidget {
 class _PantallaEjecucionState extends State<PantallaEjecucion> {
   int pasoActual = 0;
 
-  // Valores introducidos durante esta ejecución: 'Muestra' → '12'.
-  // Viven aquí, y no en cada paso, para no perderlos al ir atrás y adelante.
-  final Map<String, String> valores = {};
+  // Datos introducidos durante esta ejecución. Viven aquí, y no en cada paso,
+  // para no perderlos al ir atrás y adelante.
+  final Map<String, String> valores = {}; // 'Lote de la Taq' → 'A123'
+  List<Muestra> muestras = [];
+  int _contadorMuestras = 0; // para dar un id único a cada fila nueva
+
+  @override
+  void initState() {
+    super.initState();
+    // La tabla de muestras empieza con los controles del primer paso de cálculo
+    for (final paso in widget.protocolo.pasos) {
+      if (paso is PasoCalculo) {
+        muestras = muestrasIniciales(paso);
+        break;
+      }
+    }
+  }
 
   void actualizarValor(String clave, String valor) {
     setState(() {
       valores[clave] = valor;
+    });
+  }
+
+  void anadirMuestra(String tipo) {
+    setState(() {
+      _contadorMuestras++;
+      muestras.add(Muestra(id: 'nueva-$_contadorMuestras', tipo: tipo));
+    });
+  }
+
+  void actualizarMuestra(int indice, Muestra muestra) {
+    setState(() {
+      muestras[indice] = muestra;
+    });
+  }
+
+  void eliminarMuestra(int indice) {
+    setState(() {
+      muestras.removeAt(indice);
     });
   }
 
@@ -36,7 +70,7 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     final paso = widget.protocolo.pasos[pasoActual];
     return switch (paso) {
       PasoInstrucciones() => true,
-      PasoCalculo p => calculoCompleto(p, valores),
+      PasoCalculo p => calculoCompleto(p, muestras, valores),
     };
   }
 
@@ -127,8 +161,12 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                       ),
                     PasoCalculo p => VistaCalculo(
                         paso: p,
+                        muestras: muestras,
                         valores: valores,
-                        onCambio: actualizarValor,
+                        onCambioValor: actualizarValor,
+                        onCambioMuestra: actualizarMuestra,
+                        onAnadirMuestra: anadirMuestra,
+                        onEliminarMuestra: eliminarMuestra,
                       ),
                   },
                 ),

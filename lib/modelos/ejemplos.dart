@@ -22,7 +22,10 @@ final pcrEstandar = Protocolo(
     PasoCalculo(
       titulo: 'Preparar el mastermix',
       volumenReaccion: 25,
-      volumenMolde: 1,
+      volumenMolde: 5, // hueco para DNA + agua
+      modo: ModoMolde.normalizado,
+      ngObjetivo: 50,
+      volumenMinimo: 1,
       reactivos: [
         Reactivo(nombre: 'Buffer', volPorReaccion: 2.5, concentracion: '10x'),
         Reactivo(nombre: 'dNTPs', volPorReaccion: 0.5, concentracion: '10 mM'),
@@ -32,13 +35,11 @@ final pcrEstandar = Protocolo(
         Reactivo(nombre: 'MgCl2', volPorReaccion: 1.5, concentracion: '25 mM'),
       ],
       tiposTubo: [
-        TipoTubo(nombre: 'Muestra', seAnade: 'su DNA'),
+        TipoTubo(nombre: 'Muestra', conDna: true),
+        TipoTubo(nombre: 'Control positivo', conDna: true, cantidadFija: 1),
         TipoTubo(nombre: 'Control negativo', seAnade: 'agua', cantidadFija: 1),
-        TipoTubo(nombre: 'Control positivo', seAnade: 'DNA control', cantidadFija: 1),
       ],
-      // Ejercicio 1
       parametros: [
-        ParametroEntrada(nombre: 'Concentración del DNA', unidad: 'ng/µL'),
         ParametroEntrada(
           nombre: 'Lote de la Taq',
           tipo: TipoParametro.texto,
@@ -49,11 +50,12 @@ final pcrEstandar = Protocolo(
     ),
     PasoInstrucciones(
       titulo: 'Repartir el mastermix',
-      texto: 'Repartir 24 µL de mastermix en cada tubo.',
+      texto: 'Repartir 20 µL de mastermix en cada tubo.',
     ),
     PasoInstrucciones(
       titulo: 'Añadir el molde',
-      texto: 'Añadir 1 µL de DNA a cada muestra y 1 µL de agua al control negativo.',
+      texto: 'Añadir a cada tubo el DNA y el agua indicados en el paso de cálculo. '
+          'Al control negativo, 5 µL de agua.',
     ),
     PasoInstrucciones(
       titulo: 'Termociclador',
