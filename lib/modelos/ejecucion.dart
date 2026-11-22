@@ -59,6 +59,33 @@ class Ejecucion {
     this.registros = const [],
   });
 
+  /// Devuelve una ejecución nueva con los datos introducidos actualizados.
+  Ejecucion conDatos({
+    Map<String, String>? valoresIntroducidos,
+    List<Muestra>? muestras,
+  }) {
+    return Ejecucion(
+      protocoloId: protocoloId,
+      protocoloVersion: protocoloVersion,
+      inicio: inicio,
+      fin: fin,
+      estado: estado,
+      valoresIntroducidos: valoresIntroducidos ?? this.valoresIntroducidos,
+      muestras: muestras ?? this.muestras,
+      registros: registros,
+    );
+  }
+
+  /// Paso por el que seguir al reanudar: el siguiente al último completado.
+  int get pasoParaReanudar {
+    if (registros.isEmpty) return 0;
+    var mayor = 0;
+    for (final registro in registros) {
+      if (registro.indicePaso > mayor) mayor = registro.indicePaso;
+    }
+    return mayor + 1;
+  }
+
   /// Devuelve una ejecución nueva con un paso más registrado.
   Ejecucion completarPaso(int indicePaso, {String? nota}) {
     return Ejecucion(

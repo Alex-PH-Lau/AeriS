@@ -4,23 +4,27 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/cuenta_atras.dart';
+import 'package:aeris/modelos/ejecucion.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
 import 'package:aeris/pantallas/widgets/avisos.dart';
 import 'package:aeris/pantallas/widgets/vista_calculo.dart';
 import 'package:aeris/pantallas/widgets/vista_temporizador.dart';
+import 'package:aeris/servicios/almacen.dart';
 import 'package:aeris/servicios/avisos.dart';
 
 class PantallaEjecucion extends StatefulWidget {
   final Protocolo protocolo;
+  final EntradaCuaderno? continuar; // si se reanuda una ejecución "En proceso"
 
-  const PantallaEjecucion({super.key, required this.protocolo});
+  const PantallaEjecucion({super.key, required this.protocolo, this.continuar});
 
   @override
   State<PantallaEjecucion> createState() => _PantallaEjecucionState();
@@ -35,6 +39,10 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   List<Muestra> muestras = [];
   int _contadorMuestras = 0; // para dar un id único a cada fila nueva
 
+  // La página del cuaderno de esta ejecución y su id en la base de datos
+  late Ejecucion _ejecucion;
+  late final Future<int> _idEjecucion;
+
   // Temporizadores y alertas
   final Map<int, CuentaAtras> cuentas = {}; // índice del paso → su cuenta atrás
   final Set<int> alertasVistas = {}; // pasos cuya alerta ya se ha confirmado
@@ -45,12 +53,35 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   void initState() {
     super.initState();
     final pasos = widget.protocolo.pasos;
+    final anterior = widget.continuar;
+
+    if (anterior != null) {
+      // Reanudar: recuperar lo que se había guardado
+      _ejecucion = anterior.ejecucion;
+      _idEjecucion = Future.value(anterior.id);
+      valores.addAll(anterior.ejecucion.valoresIntroducidos);
+      muestras = List.of(anterior.ejecucion.muestras);
+      pasoActual = min(anterior.ejecucion.pasoParaReanudar, pasos.length - 1);
+      for (var i = 0; i < pasoActual; i++) {
+        alertasVistas.add(i); // las alertas de los pasos ya hechos no se repiten
+      }
+    } else {
+      // Empezar: crear la página del cuaderno
+      _ejecucion = Ejecucion(
+        protocoloId: widget.protocolo.id,
+        protocoloVersion: widget.protocolo.version,
+        inicio: DateTime.now(),
+      );
+      _idEjecucion = almacen.crearEjecucion(_ejecucion);
+    }
 
     // La tabla de muestras empieza con los controles del primer paso de cálculo
-    for (final paso in pasos) {
-      if (paso is PasoCalculo) {
-        muestras = muestrasIniciales(paso);
-        break;
+    if (muestras.isEmpty) {
+      for (final paso in pasos) {
+        if (paso is PasoCalculo) {
+          muestras = muestrasIniciales(paso);
+          break;
+        }
       }
     }
 
@@ -63,7 +94,7 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
     _tic = Timer.periodic(const Duration(seconds: 1), (_) => _alTic());
 
     // La alerta del primer paso se muestra cuando la pantalla ya está dibujada
-    WidgetsBinding.instance.addPostFrameCallback((_) => _alEntrarEnPaso(0));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _alEntrarEnPaso(pasoActual));
   }
 
   @override
@@ -76,7 +107,30 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
         avisos.cancelar(entrada.key);
       }
     }
+
+    // Guardar lo escrito aunque no se haya avanzado de paso, para poder reanudar
+    if (_ejecucion.estado == EstadoEjecucion.enProceso) {
+      _ejecucion = _ejecucion.conDatos(
+        valoresIntroducidos: Map.of(valores),
+        muestras: List.of(muestras),
+      );
+      _guardar();
+    }
     super.dispose();
+  }
+
+  // ---------- Cuaderno ----------
+
+  Future<void> _guardar() async {
+    final id = await _idEjecucion;
+    await almacen.actualizarEjecucion(id, _ejecucion);
+  }
+
+  /// Apunta en el cuaderno que el paso actual se ha completado.
+  void _registrarPasoActual() {
+    _ejecucion = _ejecucion
+        .conDatos(valoresIntroducidos: Map.of(valores), muestras: List.of(muestras))
+        .completarPaso(pasoActual);
   }
 
   // ---------- Temporizadores ----------
@@ -178,7 +232,9 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
   void anadirMuestra(String tipo) {
     setState(() {
       _contadorMuestras++;
-      muestras.add(Muestra(id: 'nueva-$_contadorMuestras', tipo: tipo));
+      // Hora + contador: no choca con las filas de una ejecución reanudada
+      final id = '${DateTime.now().microsecondsSinceEpoch}-$_contadorMuestras';
+      muestras.add(Muestra(id: id, tipo: tipo));
     });
   }
 
@@ -215,6 +271,8 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
       if (!avanzar || !mounted) return;
     }
 
+    _registrarPasoActual();
+    _guardar();
     setState(() {
       pasoActual++;
     });
@@ -234,6 +292,11 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
       final avanzar = await confirmarAvanceConTemporizador(context);
       if (!avanzar || !mounted) return;
     }
+
+    _registrarPasoActual();
+    _ejecucion = _ejecucion.terminar();
+    await _guardar();
+    if (!mounted) return;
 
     await showDialog<void>(
       context: context,

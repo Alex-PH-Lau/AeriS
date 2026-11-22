@@ -4,11 +4,20 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
-import 'package:aeris/modelos/ejemplos.dart';
+import 'package:aeris/modelos/protocolo.dart';
 import 'package:aeris/pantallas/ejecucion.dart';
+import 'package:aeris/servicios/almacen.dart';
 
-class PantallaMisProtocolos extends StatelessWidget {
+class PantallaMisProtocolos extends StatefulWidget {
   const PantallaMisProtocolos({super.key});
+
+  @override
+  State<PantallaMisProtocolos> createState() => _PantallaMisProtocolosState();
+}
+
+class _PantallaMisProtocolosState extends State<PantallaMisProtocolos> {
+  // La consulta se lanza una vez, al abrir la pantalla, y no en cada build
+  late final Future<List<Protocolo>> _protocolos = almacen.ultimasVersiones();
 
   @override
   Widget build(BuildContext context) {
@@ -16,28 +25,46 @@ class PantallaMisProtocolos extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Mis protocolos'),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: protocolosDeEjemplo.length,
-        itemBuilder: (context, indice) {
-          final protocolo = protocolosDeEjemplo[indice];
-          return Card(
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              leading: const Icon(Icons.science, size: 36),
-              title: Text(
-                protocolo.nombreCompleto,
-                style: const TextStyle(fontSize: 20),
-              ),
-              subtitle: Text('${protocolo.numeroPasos} pasos'),
-              trailing: const Icon(Icons.play_arrow, size: 36),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PantallaEjecucion(protocolo: protocolo),
+      body: FutureBuilder<List<Protocolo>>(
+        future: _protocolos,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('No se pudieron leer los protocolos: ${snapshot.error}'));
+          }
+          final protocolos = snapshot.data;
+          if (protocolos == null) {
+            return const Center(child: CircularProgressIndicator()); // todavía cargando
+          }
+          if (protocolos.isEmpty) {
+            return const Center(
+              child: Text('Todavía no hay protocolos.', style: TextStyle(fontSize: 20)),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: protocolos.length,
+            itemBuilder: (context, indice) {
+              final protocolo = protocolos[indice];
+              return Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  leading: const Icon(Icons.science, size: 36),
+                  title: Text(
+                    protocolo.nombreCompleto,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  subtitle: Text('${protocolo.numeroPasos} pasos'),
+                  trailing: const Icon(Icons.play_arrow, size: 36),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PantallaEjecucion(protocolo: protocolo),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),

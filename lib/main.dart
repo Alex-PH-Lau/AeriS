@@ -5,11 +5,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:aeris/pantallas/inicio.dart';
+import 'package:aeris/servicios/almacen.dart';
 import 'package:aeris/servicios/avisos.dart';
 
 Future<void> main() async {
   // Necesario antes de usar plugins si main() hace algo antes de runApp
   WidgetsFlutterBinding.ensureInitialized();
+  await almacen.abrir();
   await avisos.inicializar();
   runApp(const AerisApp());
 }

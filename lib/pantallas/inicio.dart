@@ -4,6 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
+import 'package:aeris/pantallas/cuaderno.dart';
 import 'package:aeris/pantallas/mis_protocolos.dart';
 
 class PantallaInicio extends StatelessWidget {
@@ -43,6 +44,17 @@ class PantallaInicio extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const PantallaMisProtocolos(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  BotonInicio(
+                    icono: Icons.menu_book,
+                    texto: 'Cuaderno de laboratorio',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PantallaCuaderno(),
                       ),
                     ),
                   ),

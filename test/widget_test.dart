@@ -6,8 +6,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aeris/main.dart';
+import 'package:aeris/modelos/ejemplos.dart';
+import 'package:aeris/servicios/almacen.dart';
 import 'package:aeris/servicios/avisos.dart';
 
+import 'almacen_de_prueba.dart';
 import 'avisos_de_prueba.dart';
 
 /// Abre la app y entra en un protocolo de la lista.
@@ -56,16 +59,20 @@ Future<void> irAlTemporizador(WidgetTester tester) async {
 void main() {
   // Los tests no pueden usar las notificaciones reales del sistema
   late AvisosDePrueba avisosFalsos;
+  late AlmacenEnMemoria almacenFalso;
   setUp(() {
     avisosFalsos = AvisosDePrueba();
     avisos = avisosFalsos;
+    almacenFalso = AlmacenEnMemoria([pcrEstandar, electroforesis]);
+    almacen = almacenFalso;
   });
 
-  testWidgets('La pantalla de inicio muestra los tres botones', (tester) async {
+  testWidgets('La pantalla de inicio muestra sus botones', (tester) async {
     await tester.pumpWidget(const AerisApp());
 
     expect(find.text('Añadir protocolo nuevo'), findsOneWidget);
     expect(find.text('Mis protocolos'), findsOneWidget);
+    expect(find.text('Cuaderno de laboratorio'), findsOneWidget);
     expect(find.text('Ayuda'), findsOneWidget);
   });
 
@@ -225,5 +232,80 @@ void main() {
     await tester.tap(find.text('Avanzar igualmente'));
     await tester.pumpAndSettle();
     expect(find.text('Paso 5 de 5'), findsOneWidget);
+  });
+
+  testWidgets('Una ejecución terminada queda en el cuaderno como Completada', (tester) async {
+    await abrirPcr(tester);
+    await irAlCalculo(tester);
+    await rellenarCalculo(tester);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Siguiente'));
+      await tester.pump();
+    }
+    await tester.tap(find.text('Terminar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Volver'));
+    await tester.pumpAndSettle();
+
+    // Guardada con sus muestras y sus pasos
+    final guardada = almacenFalso.ejecuciones.values.single;
+    expect(guardada.estado.name, 'completada');
+    expect(guardada.muestras.map((m) => m.codigo), contains('M1'));
+    expect(guardada.registros.length, 5);
+
+    // Lista de protocolos → inicio → cuaderno
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cuaderno de laboratorio'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PCR estándar (V.1)'), findsOneWidget);
+    expect(find.textContaining('Completada'), findsOneWidget);
+  });
+
+  testWidgets('Una ejecución a medias se puede reanudar desde el cuaderno', (tester) async {
+    await abrirPcr(tester);
+    await irAlCalculo(tester);
+    await rellenarCalculo(tester);
+    await tester.tap(find.text('Siguiente')); // al paso 3
+    await tester.pump();
+
+    // Salir sin terminar: ejecución → lista → inicio
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cuaderno de laboratorio'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('En proceso'), findsOneWidget);
+
+    // Continuar: vuelve al paso 3 con las muestras guardadas
+    await tester.tap(find.text('PCR estándar (V.1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 3 de 5'), findsOneWidget);
+    expect(find.text('¡Atención!'), findsNothing); // la alerta ya se vio
+
+    await tester.tap(find.text('Anterior'));
+    await tester.pump();
+    expect(find.widgetWithText(TextField, 'M1'), findsOneWidget);
+  });
+
+  testWidgets('Descartar una ejecución a medias la borra del cuaderno', (tester) async {
+    await abrirPcr(tester);
+    await tester.pageBack(); // salir enseguida: queda "En proceso"
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cuaderno de laboratorio'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Descartar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Descartar'));
+    await tester.pumpAndSettle();
+
+    expect(almacenFalso.ejecuciones, isEmpty);
+    expect(find.textContaining('Todavía no hay ejecuciones'), findsOneWidget);
   });
 }
