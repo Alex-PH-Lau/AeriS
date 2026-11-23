@@ -4,6 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:aeris/modelos/borrador_protocolo.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
@@ -13,7 +14,7 @@ import 'package:aeris/tema.dart';
 
 /// A partir de este ancho (en píxeles lógicos) se usan dos paneles.
 /// Tablet en horizontal y PC: dos paneles. Móvil y tablet en vertical: uno.
-const anchoDosPaneles = 840.0;
+const anchoDosPaneles = Medida.anchoDosPaneles; // ahora vive en el tema
 
 class PantallaEditor extends StatefulWidget {
   final Protocolo? original; // null = protocolo nuevo
@@ -206,7 +207,17 @@ class _PantallaEditorState extends State<PantallaEditor> {
     final original = widget.original;
     final titulo = original == null ? 'Nuevo protocolo' : 'Editar ${original.nombreCompleto}';
 
-    return PopScope<Object?>(
+    // Ctrl+S guarda, como en cualquier programa de ordenador. CallbackShortcuts
+    // escucha las teclas que se pulsan con el foco en cualquier sitio de dentro
+    // (también en un campo de texto); Focus da un foco inicial por si no hay ninguno.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): _guardar,
+        const SingleActivator(LogicalKeyboardKey.keyS, meta: true): _guardar, // ⌘S en Mac
+      },
+      child: Focus(
+        autofocus: true,
+        child: PopScope<Object?>(
       // Con cambios sin guardar, la flecha atrás no sale directamente: pregunta
       canPop: !borrador.modificado,
       onPopInvokedWithResult: (didPop, resultado) async {
@@ -262,7 +273,9 @@ class _PantallaEditorState extends State<PantallaEditor> {
             },
           ),
         ),
-      ),
+      ), // Scaffold
+        ), // PopScope
+      ), // Focus
     );
   }
 

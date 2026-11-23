@@ -8,6 +8,8 @@ import 'package:aeris/modelos/ejecucion.dart';
 import 'package:aeris/pantallas/detalle_ejecucion.dart';
 import 'package:aeris/pantallas/ejecucion.dart';
 import 'package:aeris/servicios/almacen.dart';
+import 'package:aeris/servicios/archivos.dart';
+import 'package:aeris/servicios/copia_seguridad.dart';
 import 'package:aeris/tema.dart';
 
 /// "22/11/2026 10:30"
@@ -32,6 +34,87 @@ class _PantallaCuadernoState extends State<PantallaCuaderno> {
       _entradas = almacen.cuaderno();
     });
   }
+
+  // ---------- Copia de seguridad ----------
+
+  Future<void> _guardarCopia(Rect? origen) async {
+    try {
+      final ahora = DateTime.now();
+      await archivos.compartirTexto(
+        nombreArchivo: nombreArchivoCopia(ahora),
+        contenido: await crearCopia(almacen, ahora: ahora),
+        origen: origen,
+      );
+    } catch (error) {
+      if (mounted) _avisar('No se pudo crear la copia: $error');
+    }
+  }
+
+  Future<void> _restaurar() async {
+    try {
+      final texto = await archivos.elegirTexto();
+      if (texto == null) return; // cancelado
+      final resumen = await restaurarCopia(texto, almacen);
+      if (!mounted) return;
+      _recargar();
+      await _mostrarResumen(resumen);
+    } on FormatException catch (error) {
+      if (mounted) {
+        await _mostrarMensaje(
+          icono: Icons.error_outline,
+          titulo: 'No se pudo restaurar',
+          lineas: [error.message],
+        );
+      }
+    }
+  }
+
+  Future<void> _mostrarResumen(ResumenRestauracion resumen) {
+    return _mostrarMensaje(
+      icono: resumen.sinCambios ? Icons.info_outline : Icons.restore,
+      titulo: resumen.sinCambios ? 'No había nada nuevo' : 'Copia restaurada',
+      lineas: resumen.sinCambios && resumen.lineas.isEmpty
+          ? ['La copia estaba vacía.']
+          : resumen.lineas,
+    );
+  }
+
+  Future<void> _mostrarMensaje({
+    required IconData icono,
+    required String titulo,
+    required List<String> lineas,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(icono, size: Medida.iconoAviso),
+        title: Text(titulo),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final linea in lineas)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Espacio.pequeno),
+                child: Text(linea),
+              ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _avisar(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
+  }
+
+  // ---------- Entradas ----------
 
   Future<void> _abrir(EntradaCuaderno entrada) async {
     final enProceso = entrada.ejecucion.estado == EstadoEjecucion.enProceso;
@@ -85,6 +168,43 @@ class _PantallaCuadernoState extends State<PantallaCuaderno> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cuaderno de laboratorio'),
+        actions: [
+          // Builder: context del botón, para que en iPad el menú apunte a él
+          Builder(
+            builder: (contextoBoton) => PopupMenuButton<String>(
+              tooltip: 'Copia de seguridad',
+              icon: const Icon(Icons.backup),
+              onSelected: (opcion) {
+                if (opcion == 'restaurar') {
+                  _restaurar();
+                } else {
+                  final caja = contextoBoton.findRenderObject() as RenderBox?;
+                  _guardarCopia(caja == null ? null : caja.localToGlobal(Offset.zero) & caja.size);
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'guardar',
+                  height: Medida.fila,
+                  child: ListTile(
+                    leading: Icon(Icons.upload_file),
+                    title: Text('Guardar copia de seguridad'),
+                    subtitle: Text('Protocolos y cuaderno en un archivo'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'restaurar',
+                  height: Medida.fila,
+                  child: ListTile(
+                    leading: Icon(Icons.settings_backup_restore),
+                    title: Text('Restaurar una copia'),
+                    subtitle: Text('Añade lo que falte; no borra nada'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<List<EntradaCuaderno>>(
         future: _entradas,

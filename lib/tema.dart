@@ -47,6 +47,10 @@ abstract final class Medida {
   /// Icono de los avisos que bloquean la pantalla (alerta, fin del temporizador).
   static const iconoAlerta = 72.0;
 
+  /// A partir de este ancho caben dos paneles (lista y detalle) uno al lado
+  /// del otro: tablet en horizontal o ventana de ordenador.
+  static const anchoDosPaneles = 840.0;
+
   /// Ancho máximo de un formulario o de una columna de texto: en una tablet
   /// o un PC, las líneas larguísimas cansan la vista.
   static const anchoLectura = 600.0;
@@ -83,7 +87,7 @@ abstract final class EstiloTexto {
 /// después los componentes, que reutilizan los estilos de la primera fase.
 ThemeData temaAeris({Brightness brillo = Brightness.light}) {
   final base = ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 156, 8, 8), brightness: brillo),
+    colorScheme: ColorScheme.fromSeed(seedColor: colorSemilla, brightness: brillo),
     textTheme: _textos,
   );
   final colores = base.colorScheme;

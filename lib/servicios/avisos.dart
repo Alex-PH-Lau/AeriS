@@ -15,6 +15,15 @@ abstract class ServicioAvisos {
   /// Pide permiso para mostrar notificaciones. Devuelve true si se concede.
   Future<bool> pedirPermiso();
 
+  /// true si el aviso NO podría llegar a la hora exacta y todavía no se ha
+  /// preguntado en esta sesión. En Android 14 o posterior, el permiso de
+  /// "Alarmas y recordatorios" viene desactivado y lo concede el usuario en
+  /// los ajustes. Sin él, Android puede retrasar el aviso varios minutos.
+  Future<bool> convienePedirAvisoExacto();
+
+  /// Abre los ajustes del sistema donde se concede ese permiso.
+  Future<void> pedirAvisoExacto();
+
   /// Programa en el sistema un aviso para el momento [fin].
   Future<void> programarFinTemporizador({
     required int id,
@@ -33,6 +42,10 @@ ServicioAvisos avisos = NotificacionesSistema();
 class NotificacionesSistema implements ServicioAvisos {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool? _permiso; // null = todavía no se ha preguntado
+  bool _exactoPreguntado = false; // solo se explica una vez por sesión
+
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
   static const _detalles = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -86,6 +99,21 @@ class NotificacionesSistema implements ServicioAvisos {
   }
 
   @override
+  Future<bool> convienePedirAvisoExacto() async {
+    final android = _android;
+    if (android == null || _exactoPreguntado) return false; // iOS no lo necesita
+    final permitido = await android.canScheduleExactNotifications() ?? true;
+    if (permitido) return false;
+    _exactoPreguntado = true;
+    return true;
+  }
+
+  @override
+  Future<void> pedirAvisoExacto() async {
+    await _android?.requestExactAlarmsPermission();
+  }
+
+  @override
   Future<void> programarFinTemporizador({
     required int id,
     required String titulo,
@@ -118,4 +146,31 @@ class NotificacionesSistema implements ServicioAvisos {
 
   @override
   Future<void> cancelar(int id) => _plugin.cancel(id: id);
+}
+
+/// Para el ordenador (por ahora): sin notificaciones del sistema. Con la app
+/// abierta, el aviso de "¡Tiempo!" de la pantalla de ejecución sigue saliendo;
+/// lo que no hay es aviso con la app cerrada.
+class AvisosSoloEnApp implements ServicioAvisos {
+  @override
+  Future<void> inicializar() async {}
+
+  @override
+  Future<bool> pedirPermiso() async => true;
+
+  @override
+  Future<bool> convienePedirAvisoExacto() async => false;
+
+  @override
+  Future<void> pedirAvisoExacto() async {}
+
+  @override
+  Future<void> programarFinTemporizador({
+    required int id,
+    required String titulo,
+    required DateTime fin,
+  }) async {}
+
+  @override
+  Future<void> cancelar(int id) async {}
 }

@@ -58,6 +58,17 @@ void main() {
     test('Un protocolo que no existe devuelve null', () async {
       expect(await bd.protocolo('no-existe', 1), isNull);
     });
+
+    test('todasLasVersiones incluye también las antiguas', () async {
+      await bd.guardarProtocolo(pcrEstandar.nuevaVersion());
+
+      final todas = await bd.todasLasVersiones();
+      expect(todas.map((p) => p.nombreCompleto), unorderedEquals([
+        'Electroforesis en gel de agarosa (V.2)',
+        'PCR estándar (V.1)',
+        'PCR estándar (V.2)',
+      ]));
+    });
   });
 
   group('Cuaderno', () {

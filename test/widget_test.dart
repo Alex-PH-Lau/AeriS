@@ -208,6 +208,36 @@ void main() {
     expect(find.textContaining('Sin permiso de notificaciones'), findsOneWidget);
   });
 
+  testWidgets('Sin alarmas exactas, explica el permiso una sola vez', (tester) async {
+    avisosFalsos.exacto = false; // Android 14 recién instalado
+    // pumpAndSettle no sirve aquí: el temporizador en marcha repinta cada
+    // segundo y la pantalla nunca "se asienta". Se avanza el reloj a mano.
+    Future<void> esperarDialogo(WidgetTester tester) async {
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await irAlTemporizador(tester);
+
+    await tester.ensureVisible(find.text('Iniciar'));
+    await tester.tap(find.text('Iniciar'));
+    await esperarDialogo(tester);
+
+    expect(find.text('Avisos a la hora exacta'), findsOneWidget);
+    await tester.tap(find.text('Abrir ajustes'));
+    await esperarDialogo(tester);
+    expect(avisosFalsos.ajustesAbiertos, 1);
+    expect(avisosFalsos.programados.containsKey(3), isTrue); // se programa igualmente
+
+    // Pausar y volver a iniciar: ya no se pregunta otra vez
+    await tester.tap(find.text('Pausar'));
+    await tester.pump();
+    await tester.tap(find.text('Reanudar'));
+    await esperarDialogo(tester);
+    expect(find.text('Avisos a la hora exacta'), findsNothing);
+  });
+
   testWidgets('Con el temporizador en marcha pide confirmación para avanzar', (tester) async {
     await irAlTemporizador(tester);
     expect(find.text('Paso 4 de 5'), findsOneWidget);

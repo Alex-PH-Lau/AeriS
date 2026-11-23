@@ -4,6 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as rutas;
 import 'package:sqflite/sqflite.dart';
@@ -35,6 +36,9 @@ abstract class Almacen {
   /// Una versión concreta de un protocolo, o null si no existe.
   Future<Protocolo?> protocolo(String id, int version);
 
+  /// Todas las versiones de todos los protocolos (para la copia de seguridad).
+  Future<List<Protocolo>> todasLasVersiones();
+
   Future<void> guardarProtocolo(Protocolo protocolo);
 
   /// Guarda una ejecución nueva y devuelve su id.
@@ -46,6 +50,17 @@ abstract class Almacen {
   Future<List<EntradaCuaderno>> cuaderno();
 
   Future<void> borrarEjecucion(int id);
+
+  /// Guarda una imagen (bytes de un JPEG o PNG). Si el id ya existe, la reemplaza.
+  Future<void> guardarImagen(String id, Uint8List datos);
+
+  /// Los bytes de una imagen, o null si no existe.
+  Future<Uint8List?> imagen(String id);
+
+  /// Los ids de todas las imágenes guardadas (sin leer sus bytes).
+  Future<Set<String>> idsImagenes();
+
+  Future<void> borrarImagenes(Iterable<String> ids);
 }
 
 /// Almacén que usa toda la app. Los tests lo sustituyen antes de empezar.
@@ -85,11 +100,14 @@ class AlmacenSqlite implements Almacen {
     _db = await fabrica.openDatabase(
       ruta,
       options: OpenDatabaseOptions(
-        version: 1,
+        // Versión del ESQUEMA (las tablas). Al subirla, onUpgrade adapta
+        // las bases de datos que ya existen en los dispositivos.
+        version: 2,
         singleInstance: _instanciaUnica,
         // SQLite no comprueba las claves foráneas si no se le pide
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _crearTablas,
+        onUpgrade: _migrar,
       ),
     );
   }
@@ -120,9 +138,33 @@ class AlmacenSqlite implements Almacen {
       )
     ''');
 
+    await _crearTablaImagenes(db);
+
     for (final protocolo in protocolosIniciales) {
       await db.insert('protocolos', _filaProtocolo(protocolo));
     }
+  }
+
+  /// Se ejecuta al abrir una base de datos creada con una versión anterior.
+  /// Cada bloque lleva la base de datos un escalón más arriba, así que
+  /// funciona desde cualquier versión antigua.
+  Future<void> _migrar(Database db, int versionAntigua, int versionNueva) async {
+    if (versionAntigua < 2) {
+      await _crearTablaImagenes(db); // lección 18: imágenes en los pasos
+    }
+    // if (versionAntigua < 3) { ... } cuando haga falta
+  }
+
+  /// Las imágenes van en su propia tabla, una fila por imagen: Android no puede
+  /// leer filas de más de ~2 MB, y un protocolo con varias fotos dentro de su
+  /// JSON las superaría. El protocolo solo guarda el id de cada imagen.
+  Future<void> _crearTablaImagenes(Database db) async {
+    await db.execute('''
+      CREATE TABLE imagenes (
+        id    TEXT PRIMARY KEY,
+        datos BLOB NOT NULL
+      )
+    ''');
   }
 
   Future<void> cerrar() async {
@@ -152,6 +194,16 @@ class AlmacenSqlite implements Almacen {
       WHERE version = (SELECT MAX(version) FROM protocolos WHERE id = p.id)
       ORDER BY nombre COLLATE NOCASE
     ''');
+    return [for (final fila in filas) _leerProtocolo(fila['contenido'])];
+  }
+
+  @override
+  Future<List<Protocolo>> todasLasVersiones() async {
+    final filas = await _bd.query(
+      'protocolos',
+      columns: ['contenido'],
+      orderBy: 'id, version',
+    );
     return [for (final fila in filas) _leerProtocolo(fila['contenido'])];
   }
 
@@ -226,5 +278,40 @@ class AlmacenSqlite implements Almacen {
   @override
   Future<void> borrarEjecucion(int id) async {
     await _bd.delete('ejecuciones', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---------- Imágenes ----------
+
+  @override
+  Future<void> guardarImagen(String id, Uint8List datos) async {
+    await _bd.insert(
+      'imagenes',
+      {'id': id, 'datos': datos}, // BLOB: bytes tal cual, sin pasar a texto
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<Uint8List?> imagen(String id) async {
+    final filas = await _bd.query('imagenes', columns: ['datos'], where: 'id = ?', whereArgs: [id]);
+    if (filas.isEmpty) return null;
+    return filas.first['datos'] as Uint8List;
+  }
+
+  @override
+  Future<Set<String>> idsImagenes() async {
+    // Solo la columna id: pedir también 'datos' cargaría todas las fotos en memoria
+    final filas = await _bd.query('imagenes', columns: ['id']);
+    return {for (final fila in filas) fila['id'] as String};
+  }
+
+  @override
+  Future<void> borrarImagenes(Iterable<String> ids) async {
+    // Una transacción: o se borran todas, o ninguna (si algo falla a medias)
+    await _bd.transaction((txn) async {
+      for (final id in ids) {
+        await txn.delete('imagenes', where: 'id = ?', whereArgs: [id]);
+      }
+    });
   }
 }

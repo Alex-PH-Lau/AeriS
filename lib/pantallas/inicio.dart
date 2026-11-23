@@ -4,6 +4,7 @@
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
 import 'package:flutter/material.dart';
+import 'package:aeris/pantallas/ayuda.dart';
 import 'package:aeris/pantallas/cuaderno.dart';
 import 'package:aeris/pantallas/editor/pantalla_editor.dart';
 import 'package:aeris/pantallas/mis_protocolos.dart';
@@ -67,7 +68,10 @@ class PantallaInicio extends StatelessWidget {
                   BotonInicio(
                     icono: Icons.help_outline,
                     texto: 'Ayuda',
-                    onPressed: () => mostrarProximamente(context, 'Ayuda'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PantallaAyuda()),
+                    ),
                     secundario: true,
                   ),
                 ],
@@ -112,10 +116,4 @@ class BotonInicio extends StatelessWidget {
           : FilledButton.icon(style: estilo, onPressed: onPressed, icon: icon, label: label),
     );
   }
-}
-
-void mostrarProximamente(BuildContext context, String seccion) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('$seccion: próximamente')),
-  );
 }

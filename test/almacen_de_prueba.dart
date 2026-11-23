@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Additional permission for app stores: see EXCEPCION_TIENDAS.md
 
+import 'dart:typed_data';
+
 import 'package:aeris/modelos/ejecucion.dart';
 import 'package:aeris/modelos/protocolo.dart';
 import 'package:aeris/servicios/almacen.dart';
@@ -13,6 +15,7 @@ import 'package:aeris/servicios/almacen.dart';
 class AlmacenEnMemoria implements Almacen {
   final List<Protocolo> _protocolos = [];
   final Map<int, Ejecucion> ejecuciones = {};
+  final Map<String, Uint8List> imagenes = {};
   int _siguienteId = 1;
 
   AlmacenEnMemoria([List<Protocolo> iniciales = const []]) {
@@ -33,6 +36,9 @@ class AlmacenEnMemoria implements Almacen {
     }
     return ultimas.values.toList()..sort((a, b) => a.nombre.compareTo(b.nombre));
   }
+
+  @override
+  Future<List<Protocolo>> todasLasVersiones() async => List.of(_protocolos);
 
   @override
   Future<Protocolo?> protocolo(String id, int version) async {
@@ -75,5 +81,21 @@ class AlmacenEnMemoria implements Almacen {
   @override
   Future<void> borrarEjecucion(int id) async {
     ejecuciones.remove(id);
+  }
+
+  @override
+  Future<void> guardarImagen(String id, Uint8List datos) async {
+    imagenes[id] = datos;
+  }
+
+  @override
+  Future<Uint8List?> imagen(String id) async => imagenes[id];
+
+  @override
+  Future<Set<String>> idsImagenes() async => imagenes.keys.toSet();
+
+  @override
+  Future<void> borrarImagenes(Iterable<String> ids) async {
+    ids.forEach(imagenes.remove);
   }
 }

@@ -9,6 +9,7 @@ import 'package:aeris/modelos/calculo.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/pantallas/editor/editor_calculo.dart';
+import 'package:aeris/pantallas/editor/editor_texto.dart';
 import 'package:aeris/tema.dart';
 
 
@@ -42,16 +43,9 @@ class _EditorInstrucciones extends StatelessWidget {
       children: [
         CampoTitulo(titulo: paso.titulo, onCambio: (t) => onCambio(paso.copiar(titulo: t))),
         const SizedBox(height: Espacio.normal),
-        TextFormField(
-          initialValue: paso.texto,
-          decoration: const InputDecoration(
-            labelText: 'Texto del paso',
-            hintText: 'Qué hay que hacer en este paso',
-            alignLabelWithHint: true,
-          ),
-          minLines: 4,
-          maxLines: null, // crece con el texto
-          onChanged: (texto) => onCambio(paso.copiar(texto: texto)),
+        EditorTextoFormato(
+          texto: paso.texto,
+          onCambio: (texto) => onCambio(paso.copiar(texto: texto)),
         ),
         const SizedBox(height: Espacio.extra),
         SeccionHerramientas(

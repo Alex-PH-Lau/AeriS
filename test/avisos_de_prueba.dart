@@ -11,11 +11,28 @@ class AvisosDePrueba implements ServicioAvisos {
   final Map<int, DateTime> programados = {}; // id → hora del aviso
   bool permiso = true;
 
+  /// false = simula Android 14 sin el permiso de alarmas exactas
+  bool exacto = true;
+  bool _exactoPreguntado = false;
+  int ajustesAbiertos = 0;
+
   @override
   Future<void> inicializar() async {}
 
   @override
   Future<bool> pedirPermiso() async => permiso;
+
+  @override
+  Future<bool> convienePedirAvisoExacto() async {
+    if (exacto || _exactoPreguntado) return false;
+    _exactoPreguntado = true;
+    return true;
+  }
+
+  @override
+  Future<void> pedirAvisoExacto() async {
+    ajustesAbiertos++;
+  }
 
   @override
   Future<void> programarFinTemporizador({

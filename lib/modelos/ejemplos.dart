@@ -17,7 +17,9 @@ final pcrEstandar = Protocolo(
   pasos: const [
     PasoInstrucciones(
       titulo: 'Preparar los reactivos',
-      texto: 'Descongelar los reactivos en hielo y darles un pulso de centrífuga.',
+      texto: 'Descongelar los reactivos **en hielo** y darles un pulso de centrífuga.\n'
+          '\n'
+          '> La Taq no se descongela: se saca del congelador justo al usarla.',
     ),
     PasoCalculo(
       titulo: 'Preparar el mastermix',

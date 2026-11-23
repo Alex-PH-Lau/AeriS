@@ -14,6 +14,7 @@ import 'package:aeris/modelos/ejecucion.dart';
 import 'package:aeris/modelos/entradas.dart';
 import 'package:aeris/modelos/paso.dart';
 import 'package:aeris/modelos/protocolo.dart';
+import 'package:aeris/pantallas/widgets/texto_formato.dart';
 import 'package:aeris/pantallas/widgets/avisos.dart';
 import 'package:aeris/pantallas/widgets/vista_calculo.dart';
 import 'package:aeris/pantallas/widgets/vista_temporizador.dart';
@@ -198,11 +199,47 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
       return;
     }
 
+    // Android 14+: sin "Alarmas y recordatorios" el aviso puede llegar tarde.
+    // Se explica por qué hace falta ANTES de mandar al usuario a los ajustes:
+    // un ajuste que se abre sin explicación parece sospechoso.
+    if (await avisos.convienePedirAvisoExacto() && mounted) {
+      final abrir = await _explicarAvisoExacto();
+      if (abrir) await avisos.pedirAvisoExacto();
+    }
+
     await avisos.programarFinTemporizador(
       id: indice,
       titulo: widget.protocolo.pasos[indice].titulo,
       fin: fin,
     );
+  }
+
+  Future<bool> _explicarAvisoExacto() async {
+    final respuesta = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.alarm_on, size: Medida.iconoAviso),
+        title: const Text('Avisos a la hora exacta'),
+        content: const Text(
+          'Para que el temporizador te avise justo a su hora aunque bloquees '
+          'el móvil, Android necesita que actives el permiso «Alarmas y '
+          'recordatorios» para AeriS.\n\n'
+          'Sin él, el aviso puede llegar unos minutos tarde. Con AeriS abierta, '
+          'el aviso de la pantalla sale siempre a su hora.',
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Ahora no'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Abrir ajustes'),
+          ),
+        ],
+      ),
+    );
+    return respuesta ?? false;
   }
 
   /// ¿Hay un temporizador corriendo en este paso que todavía no ha terminado?
@@ -372,9 +409,9 @@ class _PantallaEjecucionState extends State<PantallaEjecucion> {
                         const SizedBox(height: Espacio.normal),
                       ],
                       switch (paso) {
-                        PasoInstrucciones p => Text(
-                            p.texto,
-                            style: EstiloTexto.paso,
+                        PasoInstrucciones p => TextoConFormato(
+                            texto: p.texto,
+                            estilo: EstiloTexto.paso,
                           ),
                         PasoCalculo p => VistaCalculo(
                             paso: p,
